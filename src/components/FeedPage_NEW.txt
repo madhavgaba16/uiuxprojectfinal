@@ -1,0 +1,110 @@
+COMMUNITY POST TEMPLATE - TO REPLACE IN FEEDPAGE.JS:
+
+{communityPosts.map((post) => (
+  <div key={post.id} className="post-card">
+    <div className="post-header">
+      <div className="post-author">
+        <div className="author-avatar">👤</div>
+        <div className="author-info">
+          <div className="author-header">
+            <h4 className="author-name">{post.authorName}</h4>
+            <div className="author-badges">
+              <span className="community-tag">🏆 Patiala Community</span>
+            </div>
+          </div>
+          <div className="author-meta">
+            <span className="vehicle-tag">🚗 {post.vehicleNumber}</span>
+            <span className="trust-tag">🛡️ {post.trustScore}% Trust</span>
+          </div>
+          <span className="post-time">{post.timeAgo}</span>
+        </div>
+      </div>
+      <span className={`post-category ${post.category}`}>
+        {post.category === 'ride' ? '🚗 Ride Share' : '⚠️ Alert'}
+      </span>
+    </div>
+    
+    <div className="post-content">
+      <h3 className="post-title">{post.title}</h3>
+      <p className="post-description">{post.description}</p>
+      {post.pickup && (
+        <div className="post-details">
+          <div className="detail-item">
+            <span className="detail-icon">📍</span>
+            <span>{post.pickup}</span>
+          </div>
+          {post.drop && (
+            <div className="detail-item">
+              <span className="detail-icon">🎯</span>
+              <span>{post.drop}</span>
+            </div>
+          )}
+          {post.time && (
+            <div className="detail-item">
+              <span className="detail-icon">🕐</span>
+              <span>{post.time}</span>
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+
+    <div className="post-votes">
+      <button className="vote-btn upvote" onClick={() => handleUpvote(post.id)}>
+        <span>👍</span>
+        <span>{post.upvotes}</span>
+      </button>
+      <button className="vote-btn downvote" onClick={() => handleDownvote(post.id)}>
+        <span>👎</span>
+        <span>{post.downvotes}</span>
+      </button>
+    </div>
+
+    <div className="post-actions">
+      {post.category === 'ride' && (
+        <button className="action-btn accept-ride-btn" onClick={() => handleAcceptRide(post.id, post.authorName)}>
+          <span>✅</span>
+          <span>Accept Ride</span>
+        </button>
+      )}
+      <button className="action-btn" onClick={() => toggleComments(post.id)}>
+        <span>💬</span>
+        <span>Comment ({post.comments.length})</span>
+      </button>
+      <button className="action-btn">
+        <span>🔄</span>
+        <span>Share</span>
+      </button>
+    </div>
+
+    {showComments[post.id] && (
+      <div className="comments-section">
+        <div className="comments-list">
+          {post.comments.map((comment) => (
+            <div key={comment.id} className="comment-item">
+              <div className="comment-author">
+                <span className="comment-avatar">👤</span>
+                <span className="comment-name">{comment.author}</span>
+                <span className="comment-time">{comment.time}</span>
+              </div>
+              <p className="comment-text">{comment.text}</p>
+            </div>
+          ))}
+        </div>
+        <div className="comment-input-box">
+          <input
+            type="text"
+            className="comment-input"
+            placeholder="Write a comment..."
+            value={commentText[post.id] || ''}
+            onChange={(e) => setCommentText(prev => ({ ...prev, [post.id]: e.target.value }))}
+            onKeyPress={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+          />
+          <button className="comment-submit-btn" onClick={() => handleAddComment(post.id)}>
+            Send
+          </button>
+        </div>
+      </div>
+    )}
+  </div>
+))}
