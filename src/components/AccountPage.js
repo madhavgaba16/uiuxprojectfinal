@@ -568,11 +568,9 @@ const AccountPage = ({ onLogout }) => {
 
           {!showChat ? (
             <div className="chat-demo-section">
-              <button className="demo-chat-btn" onClick={() => setShowChat(true)}>
-                <span>💬</span>
-                <span>Open Demo Chat</span>
-              </button>
-              <p className="demo-hint">Click to see how chat works</p>
+              <p className="demo-hint" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
+                💬 Chat will open automatically when you accept a ride request or click Messages from chat list
+              </p>
             </div>
           ) : (
             <div className="chat-interface">
@@ -776,11 +774,11 @@ const AccountPage = ({ onLogout }) => {
         <div className="modal-overlay" onClick={() => setShowAddMoney(false)}>
           <div className="modal-content" onClick={(e) => e.stopPropagation()}>
             <div className="modal-header">
-              <h2>💳 Add Money to Wallet</h2>
+              <h2> Add Money to Wallet</h2>
               <button className="modal-close" onClick={() => setShowAddMoney(false)}>✕</button>
             </div>
             <form onSubmit={handleAddMoney}>
-              <div className="form-group">
+              <div className="form-group" style="color :black;">
                 <label>Enter Amount</label>
                 <input
                   type="number"
