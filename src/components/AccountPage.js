@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import { chatsApi, walletApi } from '../api';
 import './AccountPage.css';
 const AccountPage = ({ onLogout }) => {
 
@@ -31,41 +32,36 @@ const AccountPage = ({ onLogout }) => {
     accountHolder: ''
   });
   
-  // Initialize wallet and transactions from localStorage
-  const [walletBalance, setWalletBalance] = useState(() => {
-    return parseFloat(localStorage.getItem('walletBalance')) || 2450.00;
-  });
-  
-  const [transactions, setTransactions] = useState(() => {
-    const stored = localStorage.getItem('transactions');
-    return stored ? JSON.parse(stored) : [
-      { id: 1, type: 'credit', amount: 300, description: 'Ride earnings - Chandigarh', date: 'Nov 19, 2025', time: '2:30 PM' },
-      { id: 2, type: 'debit', amount: 25, description: 'Commission deducted', date: 'Nov 19, 2025', time: '2:31 PM' },
-      { id: 3, type: 'credit', amount: 500, description: 'Money added to wallet', date: 'Nov 18, 2025', time: '10:15 AM' },
-    ];
-  });
+  const [walletBalance, setWalletBalance] = useState(0);
+  const [transactions, setTransactions] = useState([]);
 
-  // Save to localStorage whenever they change
   useEffect(() => {
-    localStorage.setItem('walletBalance', walletBalance.toString());
-    localStorage.setItem('transactions', JSON.stringify(transactions));
-  }, [walletBalance, transactions]);
+    const loadWalletData = async () => {
+      if (!loggedInDriver._id) return;
+      try {
+        const data = await walletApi.get(loggedInDriver._id);
+        setWalletBalance(data.balance || 0);
+        setTransactions(data.transactions || []);
+      } catch (error) {
+        alert(`Unable to load wallet data: ${error.message}`);
+      }
+    };
 
-  // Sync user stats from localStorage on interval
+    loadWalletData();
+  }, [loggedInDriver._id]);
+
   useEffect(() => {
-    const interval = setInterval(() => {
-      const stats = JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
-      setUserStats(stats);
-    }, 1000);
-    
-    return () => clearInterval(interval);
-  }, []);
+    setUserStats({
+      trustScore: loggedInDriver.trustScore || 95,
+      ridesShared: loggedInDriver.ridesShared || 127
+    });
+  }, [loggedInDriver.trustScore, loggedInDriver.ridesShared]);
 
   useEffect(() => {
     // Check if we should auto-open chat
     const shouldOpenChat = localStorage.getItem('openChat');
     const storedDriverName = localStorage.getItem('chatDriverName');
-    const selectedChatId = localStorage.getItem('selectedChatId');
+    const selectedChatId = localStorage.getItem('selectedConversationId');
     
     if (shouldOpenChat === 'true') {
       if (storedDriverName) {
@@ -74,11 +70,21 @@ const AccountPage = ({ onLogout }) => {
       setShowChat(true);
       
       // Load previous chat messages if coming from chat list
-      if (selectedChatId) {
-        const chatHistory = localStorage.getItem(`chat_${selectedChatId}`);
-        if (chatHistory) {
-          setChatMessages(JSON.parse(chatHistory));
-        }
+      if (selectedChatId && loggedInDriver._id) {
+        chatsApi
+          .messages(selectedChatId)
+          .then((data) => {
+            const mapped = (data.messages || []).map((m) => ({
+              id: m.id,
+              type: m.senderId === loggedInDriver._id ? 'sent' : 'received',
+              content: m.content,
+              time: m.time
+            }));
+            setChatMessages(mapped);
+          })
+          .catch((error) => {
+            alert(`Unable to load messages: ${error.message}`);
+          });
       }
       
       // Clear the flags
@@ -94,75 +100,30 @@ const AccountPage = ({ onLogout }) => {
     }
   }, []);
 
-  const handleSendMessage = () => {
+  const handleSendMessage = async () => {
     if (chatInput.trim() === '') return;
-    
-    const currentTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-    
-    // Add user's message
-    const newMessage = {
-      id: Date.now(),
-      type: 'sent',
-      content: chatInput,
-      time: currentTime
-    };
-    
-    const updatedMessages = [...chatMessages, newMessage];
-    setChatMessages(updatedMessages);
-    setChatInput('');
-    
-    // Save chat history
-    const selectedChatId = localStorage.getItem('selectedChatId');
-    if (selectedChatId) {
-      localStorage.setItem(`chat_${selectedChatId}`, JSON.stringify(updatedMessages));
-      
-      // Update last message in chat list
-      const allChats = JSON.parse(localStorage.getItem('allChats') || '[]');
-      const chatIndex = allChats.findIndex(chat => chat.id === parseInt(selectedChatId));
-      if (chatIndex !== -1) {
-        allChats[chatIndex].lastMessage = chatInput;
-        allChats[chatIndex].time = 'Just now';
-        localStorage.setItem('allChats', JSON.stringify(allChats));
-      }
-    }
-    // Auto-reply from other driver after 2 seconds
-    setTimeout(() => {
-      const replies = [
-        { punjabi: 'ਸਸ੍ਰੀ ਆਕਾਲ ਜੀ!', english: 'Sasri Akal ji!' },
-        { punjabi: 'ਠੀਕ ਆ, ਮੈਂ ਕਨਫਰਮ ਕਰਦਾ ਹਾਂ ', english: 'Thik aa, main confirm krda haan' },
-        { punjabi: 'ਪਿਕਅਪ ਪੁਆਇੰਟ Patiala Bus Stand ਆ', english: 'Pickup point Patiala Bus Stand aa' },
-        { punjabi: 'ਹਾਂ ਜੀ, ਸਮਾਂ ਤੇ ਪਹੁੰਚ ਜਾਵਾਂਗਾ', english: 'Haan ji, samaa te pahunch javanga' },
-        { punjabi: 'ਧੰਨਵਾਦ! ਕੱਲ੍ਹ ਮਿਲਦੇ ਆਂ', english: 'Dhannvaad! Kal milde aan' }
-      ];
-      
-      const randomReply = replies[Math.floor(Math.random() * replies.length)];
-      const replyTime = new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-      
-      const reply = {
-        id: Date.now(),
-        type: 'received',
-        content: `${randomReply.punjabi}<br/>${randomReply.english}`,
-        time: replyTime
+
+    const selectedChatId = localStorage.getItem('selectedConversationId');
+    if (!selectedChatId || !loggedInDriver._id) return;
+
+    try {
+      const data = await chatsApi.sendMessage(selectedChatId, {
+        senderId: loggedInDriver._id,
+        content: chatInput.trim()
+      });
+
+      const newMessage = {
+        id: data.message.id,
+        type: 'sent',
+        content: data.message.content,
+        time: data.message.time
       };
-      
-      const finalMessages = [...updatedMessages, reply];
-      setChatMessages(finalMessages);
-      
-      // Save updated chat with reply
-      if (selectedChatId) {
-        localStorage.setItem(`chat_${selectedChatId}`, JSON.stringify(finalMessages));
-        
-        // Update last message with reply
-        const allChats = JSON.parse(localStorage.getItem('allChats') || '[]');
-        const chatIndex = allChats.findIndex(chat => chat.id === parseInt(selectedChatId));
-        if (chatIndex !== -1) {
-          allChats[chatIndex].lastMessage = randomReply.english;
-          allChats[chatIndex].time = 'Just now';
-          allChats[chatIndex].unread = 0;
-          localStorage.setItem('allChats', JSON.stringify(allChats));
-        }
-      }
-    }, 2000);
+
+      setChatMessages((prev) => [...prev, newMessage]);
+      setChatInput('');
+    } catch (error) {
+      alert(`Unable to send message: ${error.message}`);
+    }
   };
 
   const handleSubmitRating = () => {
@@ -192,28 +153,21 @@ const AccountPage = ({ onLogout }) => {
     }, 500);
   };
 
-  const showCommissionPopup = () => {
+  const showCommissionPopup = async () => {
     const commissionAmount = 30;
-    
-    // Deduct from wallet
-    setWalletBalance(prev => prev - commissionAmount);
-    
-    // Update trust score for successful ride completion
-    const userStats = JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
-    userStats.trustScore = Math.min(100, (userStats.trustScore || 95) + 0.5);
-    localStorage.setItem('userStats', JSON.stringify(userStats));
-    
-    // Add transaction
-    const newTransaction = {
-      id: Date.now(),
-      type: 'debit',
-      amount: commissionAmount,
-      description: `Commission - Ride with ${driverName}`,
-      date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-      time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-    };
-    
-    setTransactions(prev => [newTransaction, ...prev]);
+
+    if (loggedInDriver._id) {
+      try {
+        const data = await walletApi.commission(loggedInDriver._id, {
+          amount: commissionAmount,
+          description: `Commission - Ride with ${driverName}`
+        });
+        setWalletBalance(data.balance || 0);
+        setTransactions(data.transactions || []);
+      } catch (error) {
+        alert(`Unable to deduct commission: ${error.message}`);
+      }
+    }
     
     const popup = document.createElement('div');
     popup.className = 'commission-popup';
@@ -237,58 +191,46 @@ const AccountPage = ({ onLogout }) => {
     }, 3000);
   };
 
-  const handleAddMoney = (e) => {
+  const handleAddMoney = async (e) => {
     e.preventDefault();
     const amountToAdd = parseFloat(amount);
     
     if (amountToAdd && amountToAdd > 0) {
-      setWalletBalance(prev => prev + amountToAdd);
-      
-      // Update trust score for successful transaction
-      const userStats = JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
-      userStats.trustScore = Math.min(100, (userStats.trustScore || 95) + 0.2);
-      localStorage.setItem('userStats', JSON.stringify(userStats));
-      
-      const newTransaction = {
-        id: Date.now(),
-        type: 'credit',
-        amount: amountToAdd,
-        description: 'Money added to wallet',
-        date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-      };
-      
-      setTransactions(prev => [newTransaction, ...prev]);
-      setAmount('');
-      setShowAddMoney(false);
-      
-      alert(`✅ Successfully added ₹${amountToAdd} to your wallet!`);
+      try {
+        const data = await walletApi.add(loggedInDriver._id, amountToAdd);
+        setWalletBalance(data.balance || 0);
+        setTransactions(data.transactions || []);
+        setAmount('');
+        setShowAddMoney(false);
+        alert(`✅ Successfully added ₹${amountToAdd} to your wallet!`);
+      } catch (error) {
+        alert(`Unable to add money: ${error.message}`);
+      }
     }
   };
 
-  const handleWithdraw = (e) => {
+  const handleWithdraw = async (e) => {
     e.preventDefault();
     const amountToWithdraw = parseFloat(amount);
     
     if (amountToWithdraw && amountToWithdraw > 0) {
       if (amountToWithdraw <= walletBalance) {
-        setWalletBalance(prev => prev - amountToWithdraw);
-        
-        const newTransaction = {
-          id: Date.now(),
-          type: 'debit',
-          amount: amountToWithdraw,
-          description: `Withdrawn to ${bankDetails.accountNumber.slice(-4)}`,
-          date: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-          time: new Date().toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true })
-        };
-        
-        setTransactions(prev => [newTransaction, ...prev]);
-        setAmount('');
-        setBankDetails({ accountNumber: '', ifsc: '', accountHolder: '' });
-        setShowWithdraw(false);
-        
-        alert(`✅ Withdrawal request of ₹${amountToWithdraw} submitted!\nMoney will be transferred to your bank account within 2-3 business days.`);
+        try {
+          const data = await walletApi.withdraw(loggedInDriver._id, {
+            amount: amountToWithdraw,
+            accountNumber: bankDetails.accountNumber
+          });
+
+          setWalletBalance(data.balance || 0);
+          setTransactions(data.transactions || []);
+          setAmount('');
+          setBankDetails({ accountNumber: '', ifsc: '', accountHolder: '' });
+          setShowWithdraw(false);
+
+          alert(`✅ Withdrawal request of ₹${amountToWithdraw} submitted!\nMoney will be transferred to your bank account within 2-3 business days.`);
+        } catch (error) {
+          alert(`Unable to withdraw: ${error.message}`);
+        }
       } else {
         alert('❌ Insufficient balance!');
       }
@@ -301,31 +243,31 @@ const AccountPage = ({ onLogout }) => {
     setShowSOSFlash(true);
     console.log('showSOSFlash set to true');
     
-    // Toggle flash color every 500ms
+    // Toggle flash color every 2 seconds
     const flashInterval = setInterval(() => {
       setFlashColor(prev => prev === 'red' ? 'blue' : 'red');
-    }, 500);
+    }, 2000);
     
     // Create and play siren sound using Web Audio API
     try {
-      const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+      const audioContext =  window.webkitAudioContext();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
       
-      // Set up siren sound
-      oscillator.type = 'sine';
+      // // Set up siren sound
+      // oscillator.type = 'sine';
       oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
       
-      // Create siren effect - alternating frequency
-      let time = audioContext.currentTime;
-      for (let i = 0; i < 10; i++) {
-        oscillator.frequency.linearRampToValueAtTime(800, time + 0.25);
-        oscillator.frequency.linearRampToValueAtTime(400, time + 0.5);
-        time += 0.5;
-      }
+      // // Create siren effect - alternating frequency
+      // let time = audioContext.currentTime;
+      // for (let i = 0; i < 10; i++) {
+      //   oscillator.frequency.linearRampToValueAtTime(800, time + 0.25);
+      //   oscillator.frequency.linearRampToValueAtTime(400, time + 0.5);
+      //   time += 0.5;
+      // }
       
       gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
       oscillator.start();

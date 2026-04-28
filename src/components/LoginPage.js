@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import './LoginPage.css';
+import { authApi } from '../api';
 
 const LoginPage = ({ onLogin }) => {
   const [formData, setFormData] = useState({
@@ -9,7 +10,7 @@ const LoginPage = ({ onLogin }) => {
     vehicleNumber: '',
     carModel: '',
     licensePhoto: null,
-    carPhoto: null
+    carPhoto: null,
   });
 
   const [previewLicense, setPreviewLicense] = useState(null);
@@ -30,17 +31,17 @@ const LoginPage = ({ onLogin }) => {
       reader.onloadend = () => {
         if (type === 'license') {
           setPreviewLicense(reader.result);
-          setFormData(prev => ({ ...prev, licensePhoto: file }));
+          setFormData(prev => ({ ...prev, licensePhoto: file.name }));
         } else {
           setPreviewCar(reader.result);
-          setFormData(prev => ({ ...prev, carPhoto: file }));
+          setFormData(prev => ({ ...prev, carPhoto: file.name }));
         }
       };
       reader.readAsDataURL(file);
     }
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
     // Validate PB11 in vehicle number
     if (!formData.vehicleNumber.toUpperCase().includes('PB11')) {
@@ -48,9 +49,23 @@ const LoginPage = ({ onLogin }) => {
       return;
     }
     
-    // Store driver data and navigate to feed
-    localStorage.setItem('driverData', JSON.stringify(formData));
-    onLogin(formData);
+    const driverProfile = {
+      name: formData.name,
+      phone: formData.phone,
+      licenseNumber: formData.licenseNumber,
+      vehicleNumber: formData.vehicleNumber,
+      carModel: formData.carModel,
+      licensePhoto: formData.licensePhoto,
+      carPhoto: formData.carPhoto
+    };
+
+    try {
+      const { driver } = await authApi.loginOrRegister(driverProfile);
+      localStorage.setItem('driverData', JSON.stringify(driver));
+      onLogin(driver);
+    } catch (error) {
+      alert(`Unable to login: ${error.message}`);
+    }
   };
 
   return (

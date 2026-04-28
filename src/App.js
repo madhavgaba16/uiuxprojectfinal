@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate, NavLink } from 'react-router-dom';
 import IntroPage from './components/IntroPage';
 import LoginPage from './components/LoginPage';
 import FeedPage from './components/FeedPage';
@@ -8,7 +8,6 @@ import NewsPage from './components/NewsPage';
 import ServicesPage from './components/ServicesPage';
 import AccountPage from './components/AccountPage';
 import ChatListPage from './components/ChatListPage';
-import BottomNav from './components/BottomNav';
 import './App.css';
 
 function App() {
@@ -17,11 +16,16 @@ function App() {
 
   useEffect(() => {
     // Check if user is already logged in
-    const driverData = localStorage.getItem('driverData');
-    
-    if (driverData) {
-      setIsLoggedIn(true);
-      setShowIntro(false);
+    try {
+      const driverData = localStorage.getItem('driverData');
+
+      if (driverData) {
+        JSON.parse(driverData);
+        setIsLoggedIn(true);
+        setShowIntro(false);
+      }
+    } catch {
+      localStorage.removeItem('driverData');
     }
   }, []);
 
@@ -47,7 +51,16 @@ function App() {
     setIsLoggedIn(false);
   };
 
-  return ( // <-- **The main return was incorrectly started and duplicated!**
+  const navItems = [
+    { path: '/feed', label: 'Home', icon: '🏠' },
+    { path: '/post', label: 'Post', icon: '📝' },
+    { path: '/news', label: 'News', icon: '📰' },
+    { path: '/services', label: 'Services', icon: '🛠' },
+    { path: '/chats', label: 'Messages', icon: '💬' },
+    { path: '/account', label: 'Profile', icon: '👤' }
+  ];
+
+  return (
     <Router>
       <div className="App">
         {showIntro ? (
@@ -55,21 +68,53 @@ function App() {
         ) : !isLoggedIn ? (
           <LoginPage onLogin={handleLogin} />
         ) : (
-          <>
-            <Routes>
-              {/* Redirect root to feed when logged in */}
-              <Route path="/" element={<Navigate to="/feed" replace />} /> 
-              <Route path="/feed" element={<FeedPage />} />
-              <Route path="/post" element={<PostPage />} />
-              <Route path="/news" element={<NewsPage />} />
-              <Route path="/services" element={<ServicesPage />} />
-              <Route path="/account" element={<AccountPage onLogout={handleLogout} />} />
-              <Route path="/chats" element={<ChatListPage />} />
-              {/* Catch-all route to redirect to feed */}
-              <Route path="*" element={<Navigate to="/feed" replace />} /> 
-            </Routes>
-            <BottomNav />
-          </>
+          <div className="tw-shell">
+            <aside className="tw-left">
+              <div className="tw-brand">✦ DriverFeed</div>
+              <nav className="tw-nav">
+                {navItems.map((item) => (
+                  <NavLink
+                    key={item.path}
+                    to={item.path}
+                    className={({ isActive }) => `tw-nav-item ${isActive ? 'active' : ''}`}
+                  >
+                    <span className="tw-nav-icon">{item.icon}</span>
+                    <span className="tw-nav-label">{item.label}</span>
+                  </NavLink>
+                ))}
+              </nav>
+            </aside>
+
+            <main className="tw-main">
+              <Routes>
+                <Route path="/" element={<Navigate to="/feed" replace />} />
+                <Route path="/feed" element={<FeedPage />} />
+                <Route path="/post" element={<PostPage />} />
+                <Route path="/news" element={<NewsPage />} />
+                <Route path="/services" element={<ServicesPage />} />
+                <Route path="/account" element={<AccountPage onLogout={handleLogout} />} />
+                <Route path="/chats" element={<ChatListPage />} />
+                <Route path="*" element={<Navigate to="/feed" replace />} />
+              </Routes>
+            </main>
+
+            <aside className="tw-right">
+              <div className="tw-search">Search</div>
+              <div className="tw-card">
+                <h3>Driver Updates</h3>
+                <p>#TrafficAlert</p>
+                <p>#FuelPrices</p>
+                <p>#RideTips</p>
+                <p>#CityRoutes</p>
+              </div>
+              <div className="tw-card">
+                <h3>Driver Channels</h3>
+                <p>City Driver Union</p>
+                <p>Safe Ride Network</p>
+                <p>Patiala Traffic Desk</p>
+              </div>
+            </aside>
+          </div>
         )}
       </div>
     </Router>

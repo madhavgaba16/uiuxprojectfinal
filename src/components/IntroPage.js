@@ -13,15 +13,15 @@ const IntroPage = ({ onEnter }) => {
             {/* Hero Section */}
             <div className="hero-section">
               <h1 className="hero-title">
-               Wheel Wise – One Platform. Every Service.
+               Driver SuperApp Hub - Ride. Earn. Connect.
               </h1>
               <h2 className="hero-subtitle">
-                Rides • News • Earnings • Chat • Delivery • Community
+                Rides • Community • News • Safety • Earnings
               </h2>
               <p className="hero-description">
-                India's first all-in-one platform built exclusively for taxi and auto drivers. 
-                Manage rides, connect with fellow drivers, track earnings, stay updated with news, 
-                and access all your essential apps in one place.
+                Your all-in-one platform for daily driver operations.
+                Manage rides, share updates with other drivers, check transport news,
+                track earnings, and access support tools from one place.
               </p>
             </div>
           </div>
@@ -42,7 +42,7 @@ const IntroPage = ({ onEnter }) => {
       {/* Full Width Section - Marquee */}
       <div className="intro-full-width">
         {/* Section Heading */}
-        <h2 className="section-heading">9 in One</h2>
+        <h2 className="section-heading">Driver Network</h2>
         
         {/* Marquee Section */}
         <div className="marquee-container">
@@ -131,7 +131,7 @@ const IntroPage = ({ onEnter }) => {
         {/* CTA Button */}
         <div className="cta-section">
           <button className="cta-button" onClick={onEnter}>
-            Get Started – Drive Smarter
+            Enter Driver App
             <span className="button-arrow">→</span>
           </button>
         </div>

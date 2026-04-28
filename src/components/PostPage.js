@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import './PostPage.css';
+import { postsApi } from '../api';
 
 const PostPage = () => {
   const navigate = useNavigate();
@@ -24,47 +25,31 @@ const PostPage = () => {
     }));
   };
 
-  const handleSubmit = (e) => {
+  const handleSubmit = async (e) => {
     e.preventDefault();
-    
-    // Get user stats from localStorage
-    const userStats = JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
-    
-    // Create new post with driver data and stats
-    const newPost = {
-      id: Date.now(),
-      authorName: driverData.name || 'Driver',
-      authorAvatar: '👤',
-      vehicleNumber: driverData.vehicleNumber || 'PB11-XX-XXXX',
-      trustScore: userStats.trustScore || 95,
-      type: postType,
-      category: postType === 'ride' ? 'ride' : 'alert',
-      title: formData.title,
-      description: formData.description,
-      pickupPoint: formData.pickupPoint,
-      dropPoint: formData.dropPoint,
-      customerDetails: formData.customerDetails,
-      timestamp: new Date().toISOString(),
-      timeAgo: 'Just now'
-    };
-    
-    // Get existing posts from localStorage
-    const existingPosts = JSON.parse(localStorage.getItem('userPosts') || '[]');
-    
-    // Add new post at the beginning
-    const updatedPosts = [newPost, ...existingPosts];
-    localStorage.setItem('userPosts', JSON.stringify(updatedPosts));
-    
-    // Increase rides shared count and trust score
-    if (postType === 'ride') {
-      userStats.ridesShared = (userStats.ridesShared || 127) + 1;
-      userStats.trustScore = Math.min(100, (userStats.trustScore || 95) + 0.5);
-      localStorage.setItem('userStats', JSON.stringify(userStats));
+
+    if (!driverData._id) {
+      alert('Please login again to create a post.');
+      navigate('/');
+      return;
     }
-    
-    // Show success message and navigate
-    alert(`✅ Your ${postType === 'ride' ? 'ride share' : 'alert'} has been posted successfully!`);
-    navigate('/feed');
+
+    try {
+      await postsApi.create({
+        driverId: driverData._id,
+        category: postType === 'ride' ? 'ride' : 'alert',
+        title: formData.title,
+        description: formData.description,
+        pickupPoint: formData.pickupPoint,
+        dropPoint: formData.dropPoint,
+        customerDetails: formData.customerDetails
+      });
+
+      alert(`✅ Your ${postType === 'ride' ? 'ride share' : 'alert'} has been posted successfully!`);
+      navigate('/feed');
+    } catch (error) {
+      alert(`Unable to publish post: ${error.message}`);
+    }
   };
 
   return (
