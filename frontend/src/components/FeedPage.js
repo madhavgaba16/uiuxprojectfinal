@@ -94,169 +94,154 @@ const FeedPage = () => {
   );
 
   if (loading) {
-    return <div className="feed-page">Loading posts...</div>;
+    return (
+      <div className="page-container">
+        <p className="feed-loading">Loading posts...</p>
+      </div>
+    );
   }
 
   return (
-    <div className="feed-page">
-      <div className="feed-header">
-        <div className="header-content">
-          <div className="header-title">
-            <h1>Community Feed</h1>
-            <p className="location-tag">📍 Patiala (PB11)</p>
-          </div>
-          <div className="filter-tabs">
-            <button className="filter-tab active">All Posts</button>
-          </div>
-        </div>
+    <div className="page-container">
+      <div className="page-header">
+        <h1 className="page-title">Community Feed</h1>
+        <p className="page-subtitle">Patiala (PB11)</p>
       </div>
 
-      <div className="feed-container">
-        <div className="feed-content">
-          {posts.length === 0 && (
-            <div className="post-card">
-              <div className="post-content">
-                <h3 className="post-title">No posts yet</h3>
-                <p className="post-description">Create a new ride share or alert post to see it here.</p>
+      <div className="feed-content">
+        {posts.length === 0 && (
+          <div className="card feed-empty">
+            <h3 className="feed-empty-title">No posts yet</h3>
+            <p className="feed-empty-text">Create a new ride share or alert post to see it here.</p>
+          </div>
+        )}
+
+        {userPosts.map((post) => (
+          <div key={post.id} className="card post-card">
+            <div className="post-header">
+              <div className="post-author">
+                <div className="avatar-circle">
+                  {(post.authorName || '?').charAt(0).toUpperCase()}
+                </div>
+                <div className="post-author-info">
+                  <div className="post-author-name">
+                    {post.authorName}
+                    <span className="badge post-you-badge">You</span>
+                  </div>
+                  <div className="post-meta-row">
+                    <span className="post-meta-tag">{post.vehicleNumber}</span>
+                    <span className="post-meta-tag">{post.trustScore}% Trust</span>
+                  </div>
+                  <span className="post-time">{post.timeAgo}</span>
+                </div>
               </div>
+              <span className={`badge ${post.category === 'alert' ? 'badge-warning' : ''}`}>
+                {post.category === 'ride' ? 'Ride Share' : 'Alert'}
+              </span>
             </div>
-          )}
-
-          {userPosts.map((post) => (
-            <div key={post.id} className="post-card">
-              <div className="post-header">
-                <div className="post-author">
-                  <div className="author-avatar">👤</div>
-                  <div className="author-info">
-                    <div className="author-header">
-                      <h4 className="author-name">{post.authorName} <span className="you-badge">You</span></h4>
-                    </div>
-                    <div className="author-meta">
-                      <span className="vehicle-tag">🚗 {post.vehicleNumber}</span>
-                      <span className="trust-tag">🛡️ {post.trustScore}% Trust</span>
-                    </div>
-                    <span className="post-time">{post.timeAgo}</span>
-                  </div>
-                </div>
-                <span className={`post-category ${post.category}`}>
-                  {post.category === 'ride' ? '🚗 Ride Share' : '⚠️ Alert'}
-                </span>
-              </div>
-              <div className="post-content">
-                <h3 className="post-title">{post.title}</h3>
-                <p className="post-description">{post.description}</p>
-              </div>
+            <div className="post-body">
+              <h3 className="post-title">{post.title}</h3>
+              <p className="post-description">{post.description}</p>
             </div>
-          ))}
+          </div>
+        ))}
 
-          {communityPosts.map((post) => (
-            <div key={post.id} className="post-card">
-              <div className="post-header">
-                <div className="post-author">
-                  <div className="author-avatar">👤</div>
-                  <div className="author-info">
-                    <div className="author-header">
-                      <h4 className="author-name">{post.authorName}</h4>
-                    </div>
-                    <div className="author-meta">
-                      <span className="community-tag">🏆 Patiala</span>
-                      <span className="vehicle-tag">🚗 {post.vehicleNumber}</span>
-                      <span className="trust-tag">🛡️ {post.trustScore}% Trust</span>
-                    </div>
-                    <span className="post-time">{post.timeAgo}</span>
-                  </div>
+        {communityPosts.map((post) => (
+          <div key={post.id} className="card post-card">
+            <div className="post-header">
+              <div className="post-author">
+                <div className="avatar-circle">
+                  {(post.authorName || '?').charAt(0).toUpperCase()}
                 </div>
-                <span className={`post-category ${post.category}`}>
-                  {post.category === 'ride' ? 'Ride Share' : 'Alert'}
-                </span>
-              </div>
-
-              <div className="post-content">
-                <h3 className="post-title">{post.title}</h3>
-                <p className="post-description">{post.description}</p>
-                {post.pickup && (
-                  <div className="post-details">
-                    <div className="detail-item">
-                      <span className="detail-icon">📍</span>
-                      <span>{post.pickup}</span>
-                    </div>
-                    {post.drop && (
-                      <div className="detail-item">
-                        <span className="detail-icon">🏁</span>
-                        <span>{post.drop}</span>
-                      </div>
-                    )}
+                <div className="post-author-info">
+                  <div className="post-author-name">{post.authorName}</div>
+                  <div className="post-meta-row">
+                    <span className="post-meta-tag">Patiala</span>
+                    <span className="post-meta-tag">{post.vehicleNumber}</span>
+                    <span className="post-meta-tag">{post.trustScore}% Trust</span>
                   </div>
-                )}
-              </div>
-
-              <div className="post-actions">
-                <div className="vote-buttons">
-                  <button className="vote-btn upvote" onClick={() => handleVote(post.id, 'upvote')}>
-                    <span>👍</span>
-                    <span>{post.upvotes}</span>
-                  </button>
-                  <button className="vote-btn downvote" onClick={() => handleVote(post.id, 'downvote')}>
-                    <span>👎</span>
-                    <span>{post.downvotes}</span>
-                  </button>
+                  <span className="post-time">{post.timeAgo}</span>
                 </div>
-                <div className="action-buttons">
-                  <button className="action-btn" onClick={() => toggleComments(post.id)}>
-                    <span>💬</span>
-                    <span>Comment ({(post.comments || []).length})</span>
-                  </button>
-                  {post.category === 'ride' && (
-                    <button className="action-btn accept-ride-btn" onClick={() => handleAcceptRide(post)}>
-                      <span>✅</span>
-                      <span>Accept Ride</span>
-                    </button>
+              </div>
+              <span className={`badge ${post.category === 'alert' ? 'badge-warning' : ''}`}>
+                {post.category === 'ride' ? 'Ride Share' : 'Alert'}
+              </span>
+            </div>
+
+            <div className="post-body">
+              <h3 className="post-title">{post.title}</h3>
+              <p className="post-description">{post.description}</p>
+              {post.pickup && (
+                <div className="post-locations">
+                  <span className="post-location-item">From: {post.pickup}</span>
+                  {post.drop && (
+                    <span className="post-location-item">To: {post.drop}</span>
                   )}
-                </div>
-              </div>
-
-              {showComments[post.id] && (
-                <div className="comments-section">
-                  <div className="comments-list">
-                    {(post.comments || []).map((comment) => (
-                      <div key={comment.id} className="comment-item">
-                        <div className="comment-author">
-                          <span className="comment-avatar">👤</span>
-                          <span className="comment-name">{comment.author}</span>
-                          <span className="comment-time">{comment.time}</span>
-                        </div>
-                        <p className="comment-text">{comment.text}</p>
-                      </div>
-                    ))}
-                  </div>
-                  <div className="comment-input-box">
-                    <input
-                      type="text"
-                      className="comment-input"
-                      placeholder="Write a comment..."
-                      value={commentText[post.id] || ''}
-                      onChange={(e) => setCommentText((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                      onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                    />
-                    <button className="comment-submit-btn" onClick={() => handleAddComment(post.id)}>
-                      Send
-                    </button>
-                  </div>
                 </div>
               )}
             </div>
-          ))}
-        </div>
 
-        <div className="feed-sidebar">
-          <div className="sidebar-card chat-card">
-            <h3 className="sidebar-title">💬 Messages</h3>
-            <p className="chat-subtitle">Stay connected with your community</p>
-            <button className="view-chats-btn" onClick={() => navigate('/chats')}>
-              <span>View All Chats</span>
-            </button>
+            <div className="post-actions">
+              <div className="post-actions-left">
+                <button
+                  className="btn-secondary post-vote-btn"
+                  onClick={() => handleVote(post.id, 'upvote')}
+                >
+                  + {post.upvotes}
+                </button>
+                <button
+                  className="btn-secondary post-vote-btn"
+                  onClick={() => handleVote(post.id, 'downvote')}
+                >
+                  - {post.downvotes}
+                </button>
+                <button
+                  className="btn-secondary post-comment-btn"
+                  onClick={() => toggleComments(post.id)}
+                >
+                  Comment ({(post.comments || []).length})
+                </button>
+              </div>
+              {post.category === 'ride' && (
+                <button
+                  className="btn-primary post-accept-btn"
+                  onClick={() => handleAcceptRide(post)}
+                >
+                  Accept Ride
+                </button>
+              )}
+            </div>
+
+            {showComments[post.id] && (
+              <div className="post-comments">
+                <div className="post-comments-list">
+                  {(post.comments || []).map((comment) => (
+                    <div key={comment.id} className="comment-item">
+                      <div className="comment-header">
+                        <span className="comment-author">{comment.author}</span>
+                        <span className="comment-time">{comment.time}</span>
+                      </div>
+                      <p className="comment-text">{comment.text}</p>
+                    </div>
+                  ))}
+                </div>
+                <div className="comment-input-row">
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Write a comment..."
+                    value={commentText[post.id] || ''}
+                    onChange={(e) => setCommentText((prev) => ({ ...prev, [post.id]: e.target.value }))}
+                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+                  />
+                  <button className="btn-primary" onClick={() => handleAddComment(post.id)}>
+                    Send
+                  </button>
+                </div>
+              </div>
+            )}
           </div>
-        </div>
+        ))}
       </div>
     </div>
   );
