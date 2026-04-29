@@ -260,7 +260,7 @@ Remove `"driver-community-platform": "file:.."` from dependencies.
 
 ```
 PORT=5000
-MONGODB_URI=mongodb+srv://dvashishatbe23_db_user:n7QEM77qVzFIL3Xg@cluster0.3ibwbap.mongodb.net/madhavGaba
+MONGODB_URI=mongodb+srv://<username>:<password>@<cluster>.mongodb.net/madhavGaba
 ```
 
 - [ ] **Step 3: Update backend/.env.example**

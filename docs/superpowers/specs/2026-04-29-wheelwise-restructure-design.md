@@ -103,7 +103,7 @@ uiuxprojectfinal/
 ## 4. Backend
 
 ### Configuration
-- MongoDB Atlas SRV: `mongodb+srv://dvashishatbe23_db_user:n7QEM77qVzFIL3Xg@cluster0.3ibwbap.mongodb.net/madhavGaba`
+- MongoDB Atlas SRV: configured in backend/.env (not committed)
 - Port: 5000
 
 ### Code Cleanup
