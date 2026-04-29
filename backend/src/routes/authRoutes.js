@@ -1,6 +1,8 @@
 const express = require('express');
 const Driver = require('../models/Driver');
 const Wallet = require('../models/Wallet');
+const Post = require('../models/Post');
+const Transaction = require('../models/Transaction');
 
 const router = express.Router();
 
@@ -75,6 +77,114 @@ router.post('/login-register', async (req, res) => {
       { $setOnInsert: { driverId: driver._id, balance: 2450 } },
       { upsert: true }
     );
+
+    // Seed dummy data for new drivers only
+    const existingPosts = await Post.countDocuments({ authorId: driver._id });
+    if (existingPosts === 0) {
+      await Post.insertMany([
+        {
+          authorId: driver._id,
+          category: 'ride',
+          title: 'Going to Chandigarh - 2 Seats Available',
+          description: 'Leaving tomorrow morning at 8 AM from Patiala Bus Stand. Sharing fuel costs. AC car, comfortable ride.',
+          pickupPoint: 'Patiala Bus Stand',
+          dropPoint: 'Chandigarh Sector 17',
+          upvotes: 12,
+          downvotes: 1,
+          isPublished: true,
+          analytics: { views: 45, shares: 3, engagementScore: 10 },
+          tags: ['chandigarh', 'morning-ride']
+        },
+        {
+          authorId: driver._id,
+          category: 'alert',
+          title: 'Heavy Traffic Near Railway Station',
+          description: 'Avoid Railway Road between 5-7 PM. Major congestion due to construction work. Take Fountain Chowk alternate route instead.',
+          pickupPoint: 'Railway Station Road',
+          upvotes: 28,
+          downvotes: 2,
+          isPublished: true,
+          analytics: { views: 120, shares: 8, engagementScore: 24 },
+          tags: ['traffic', 'patiala']
+        },
+        {
+          authorId: driver._id,
+          category: 'ride',
+          title: 'Daily Commute to Rajpura - Carpool',
+          description: 'Looking for regular carpool partners for Patiala to Rajpura route. Monday to Friday, 9 AM departure.',
+          pickupPoint: 'Leela Bhawan',
+          dropPoint: 'Rajpura Bus Stand',
+          upvotes: 8,
+          downvotes: 0,
+          isPublished: true,
+          analytics: { views: 32, shares: 2, engagementScore: 8 },
+          tags: ['carpool', 'daily']
+        },
+        {
+          authorId: driver._id,
+          category: 'alert',
+          title: 'Fog Warning - Drive Slow on NH-64',
+          description: 'Dense fog reported on National Highway 64 between Patiala and Sirhind. Visibility below 50 meters. Use fog lights and drive under 40 km/h.',
+          pickupPoint: 'NH-64 Patiala-Sirhind',
+          upvotes: 35,
+          downvotes: 0,
+          isPublished: true,
+          analytics: { views: 200, shares: 15, engagementScore: 35 },
+          tags: ['fog', 'safety', 'highway']
+        },
+        {
+          authorId: driver._id,
+          category: 'ride',
+          title: 'Airport Drop - Mohali Airport',
+          description: 'Going to Chandigarh Airport tomorrow at 4 AM for an early morning flight drop. Can pick up 3 passengers along the way.',
+          pickupPoint: 'Patiala Urban Estate',
+          dropPoint: 'Mohali International Airport',
+          upvotes: 5,
+          downvotes: 0,
+          isPublished: true,
+          analytics: { views: 18, shares: 1, engagementScore: 5 },
+          tags: ['airport', 'early-morning']
+        }
+      ]);
+
+      await Transaction.insertMany([
+        {
+          driverId: driver._id,
+          type: 'credit',
+          amount: 500,
+          description: 'Welcome bonus',
+          details: { paymentMethod: 'wallet', referenceId: 'WELCOME-BONUS', status: 'success' }
+        },
+        {
+          driverId: driver._id,
+          type: 'credit',
+          amount: 1200,
+          description: 'Ride earnings - Patiala to Chandigarh',
+          details: { paymentMethod: 'wallet', referenceId: `RIDE-${Date.now()}-1`, status: 'success' }
+        },
+        {
+          driverId: driver._id,
+          type: 'debit',
+          amount: 30,
+          description: 'Commission - Ride with Harpreet Singh',
+          details: { paymentMethod: 'wallet', referenceId: `COM-${Date.now()}-1`, status: 'success' }
+        },
+        {
+          driverId: driver._id,
+          type: 'credit',
+          amount: 800,
+          description: 'Ride earnings - Patiala to Rajpura',
+          details: { paymentMethod: 'wallet', referenceId: `RIDE-${Date.now()}-2`, status: 'success' }
+        },
+        {
+          driverId: driver._id,
+          type: 'debit',
+          amount: 30,
+          description: 'Commission - Ride with Gurdeep Kaur',
+          details: { paymentMethod: 'wallet', referenceId: `COM-${Date.now()}-2`, status: 'success' }
+        }
+      ]);
+    }
 
     res.json({ driver });
   } catch (error) {
