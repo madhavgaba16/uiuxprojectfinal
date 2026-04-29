@@ -1,0 +1,7 @@
+{"type":"server-started","port":63142,"host":"127.0.0.1","url_host":"localhost","url":"http://localhost:63142","screen_dir":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/content","state_dir":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/state"}
+{"type":"screen-added","file":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/content/color-palette.html"}
+{"type":"screen-added","file":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/content/color-palette-v2.html"}
+{"type":"screen-added","file":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/content/layout-direction.html"}
+{"type":"screen-added","file":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/content/theme-default.html"}
+{"type":"screen-added","file":"/home/kerito/Desktop/gaba/uiuxprojectfinal/.superpowers/brainstorm/260432-1777468830/content/waiting.html"}
+{"type":"server-stopped","reason":"idle timeout"}
