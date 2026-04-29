@@ -1,17 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { chatsApi, walletApi } from '../api';
 import './AccountPage.css';
-const AccountPage = ({ onLogout }) => {
 
+const AccountPage = ({ onLogout }) => {
   const loggedInDriver = JSON.parse(localStorage.getItem('driverData') || '{}');
-  
+
   const [userStats, setUserStats] = useState(() => {
     return JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
   });
-  
+
   const [showSOSFlash, setShowSOSFlash] = useState(false);
-  const [flashColor, setFlashColor] = useState('red');
-  
+
   const [showChat, setShowChat] = useState(false);
   const [driverName, setDriverName] = useState('Other Driver');
   const [confirmationStatus, setConfirmationStatus] = useState({
@@ -31,7 +30,7 @@ const AccountPage = ({ onLogout }) => {
     ifsc: '',
     accountHolder: ''
   });
-  
+
   const [walletBalance, setWalletBalance] = useState(0);
   const [transactions, setTransactions] = useState([]);
 
@@ -62,13 +61,13 @@ const AccountPage = ({ onLogout }) => {
     const shouldOpenChat = localStorage.getItem('openChat');
     const storedDriverName = localStorage.getItem('chatDriverName');
     const selectedChatId = localStorage.getItem('selectedConversationId');
-    
+
     if (shouldOpenChat === 'true') {
       if (storedDriverName) {
         setDriverName(storedDriverName);
       }
       setShowChat(true);
-      
+
       // Load previous chat messages if coming from chat list
       if (selectedChatId && loggedInDriver._id) {
         chatsApi
@@ -86,10 +85,10 @@ const AccountPage = ({ onLogout }) => {
             alert(`Unable to load messages: ${error.message}`);
           });
       }
-      
+
       // Clear the flags
       localStorage.removeItem('openChat');
-      
+
       // Scroll to chat section
       setTimeout(() => {
         const chatSection = document.getElementById('chat');
@@ -128,21 +127,21 @@ const AccountPage = ({ onLogout }) => {
 
   const handleSubmitRating = () => {
     if (rating === 0) return;
-    
+
     // Save rating and update trust score
-    const userStats = JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
-    userStats.trustScore = Math.min(100, (userStats.trustScore || 95) + 0.3);
-    localStorage.setItem('userStats', JSON.stringify(userStats));
-    
+    const stats = JSON.parse(localStorage.getItem('userStats') || '{"trustScore": 95, "ridesShared": 127}');
+    stats.trustScore = Math.min(100, (stats.trustScore || 95) + 0.3);
+    localStorage.setItem('userStats', JSON.stringify(stats));
+
     setShowRating(false);
     setRating(0);
-    alert(`Thank you for rating ${driverName} with ${rating} stars! ⭐`);
+    alert(`Thank you for rating ${driverName} with ${rating} stars!`);
   };
 
-  const handleConfirmRide = (e) => {
+  const handleConfirmRide = () => {
     // Only confirm one party - the one who clicked
     setConfirmationStatus(prev => ({ ...prev, driver: true }));
-    
+
     // Show commission popup immediately
     setTimeout(() => {
       showCommissionPopup();
@@ -168,19 +167,32 @@ const AccountPage = ({ onLogout }) => {
         alert(`Unable to deduct commission: ${error.message}`);
       }
     }
-    
+
+    // Build popup using safe DOM methods (no innerHTML)
     const popup = document.createElement('div');
     popup.className = 'commission-popup';
-    popup.innerHTML = `
-      <div class="popup-content">
-        <div class="popup-icon">💰</div>
-        <h3>Commission Deducted</h3>
-        <p class="deduction-amount">–₹${commissionAmount}</p>
-        <p class="popup-message">Amount deducted from your wallet</p>
-      </div>
-    `;
+
+    const content = document.createElement('div');
+    content.className = 'popup-content';
+
+    const label = document.createElement('p');
+    label.className = 'popup-label';
+    label.textContent = 'Commission Deducted';
+
+    const amountEl = document.createElement('p');
+    amountEl.className = 'deduction-amount';
+    amountEl.textContent = '–₹' + commissionAmount;
+
+    const msg = document.createElement('p');
+    msg.className = 'popup-message';
+    msg.textContent = 'Amount deducted from your wallet';
+
+    content.appendChild(label);
+    content.appendChild(amountEl);
+    content.appendChild(msg);
+    popup.appendChild(content);
     document.body.appendChild(popup);
-    
+
     setTimeout(() => {
       popup.classList.add('show');
     }, 100);
@@ -194,7 +206,7 @@ const AccountPage = ({ onLogout }) => {
   const handleAddMoney = async (e) => {
     e.preventDefault();
     const amountToAdd = parseFloat(amount);
-    
+
     if (amountToAdd && amountToAdd > 0) {
       try {
         const data = await walletApi.add(loggedInDriver._id, amountToAdd);
@@ -202,7 +214,7 @@ const AccountPage = ({ onLogout }) => {
         setTransactions(data.transactions || []);
         setAmount('');
         setShowAddMoney(false);
-        alert(`✅ Successfully added ₹${amountToAdd} to your wallet!`);
+        alert(`Successfully added Rs.${amountToAdd} to your wallet!`);
       } catch (error) {
         alert(`Unable to add money: ${error.message}`);
       }
@@ -212,7 +224,7 @@ const AccountPage = ({ onLogout }) => {
   const handleWithdraw = async (e) => {
     e.preventDefault();
     const amountToWithdraw = parseFloat(amount);
-    
+
     if (amountToWithdraw && amountToWithdraw > 0) {
       if (amountToWithdraw <= walletBalance) {
         try {
@@ -227,602 +239,457 @@ const AccountPage = ({ onLogout }) => {
           setBankDetails({ accountNumber: '', ifsc: '', accountHolder: '' });
           setShowWithdraw(false);
 
-          alert(`✅ Withdrawal request of ₹${amountToWithdraw} submitted!\nMoney will be transferred to your bank account within 2-3 business days.`);
+          alert(`Withdrawal request of Rs.${amountToWithdraw} submitted!\nMoney will be transferred to your bank account within 2-3 business days.`);
         } catch (error) {
           alert(`Unable to withdraw: ${error.message}`);
         }
       } else {
-        alert('❌ Insufficient balance!');
+        alert('Insufficient balance!');
       }
     }
   };
 
   const handleSOS = () => {
-    // Show flashing screen first
-    console.log('SOS button clicked - starting flash');
     setShowSOSFlash(true);
-    console.log('showSOSFlash set to true');
-    
-    // Toggle flash color every 2 seconds
-    const flashInterval = setInterval(() => {
-      setFlashColor(prev => prev === 'red' ? 'blue' : 'red');
-    }, 2000);
-    
-    // Create and play siren sound using Web Audio API
-    try {
-      const audioContext =  window.webkitAudioContext();
-      const oscillator = audioContext.createOscillator();
-      const gainNode = audioContext.createGain();
-      
-      oscillator.connect(gainNode);
-      gainNode.connect(audioContext.destination);
-      
-      // // Set up siren sound
-      // oscillator.type = 'sine';
-      oscillator.frequency.setValueAtTime(400, audioContext.currentTime);
-      
-      // // Create siren effect - alternating frequency
-      // let time = audioContext.currentTime;
-      // for (let i = 0; i < 10; i++) {
-      //   oscillator.frequency.linearRampToValueAtTime(800, time + 0.25);
-      //   oscillator.frequency.linearRampToValueAtTime(400, time + 0.5);
-      //   time += 0.5;
-      // }
-      
-      gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
-      oscillator.start();
-      
-      // Stop sound after 5 seconds
-      setTimeout(() => {
-        try {
-          oscillator.stop();
-          audioContext.close();
-        } catch (e) {
-          console.log('Audio cleanup error:', e);
-        }
-      }, 5000);
-    } catch (error) {
-      console.log('Audio error:', error);
-    }
-    
+
     // Stop flashing after 5 seconds and then show alert
     setTimeout(() => {
-      console.log('Stopping flash');
-      clearInterval(flashInterval);
       setShowSOSFlash(false);
-      setFlashColor('red');
-      alert('🚨 EMERGENCY SOS ACTIVATED!\n\n✅ Police have been notified\n✅ Nearby drivers alerted\n✅ Your location is being shared\n\nHelp is on the way!');
+      alert('EMERGENCY SOS ACTIVATED!\n\nPolice have been notified\nNearby drivers alerted\nYour location is being shared\n\nHelp is on the way!');
     }, 5000);
   };
 
+  const ratingLabels = ['', 'Poor', 'Fair', 'Good', 'Very Good', 'Excellent'];
+
   return (
     <>
-      {/* SOS Flash Overlay - moved outside for better positioning */}
-      {showSOSFlash && (
-        <div 
-          style={{
-            position: 'fixed',
-            top: 0,
-            left: 0,
-            width: '100vw',
-            height: '100vh',
-            zIndex: 99999,
-            pointerEvents: 'none',
-            backgroundColor: flashColor === 'red' ? 'rgba(255, 0, 0, 0.9)' : 'rgba(0, 0, 255, 0.9)',
-            transition: 'background-color 0.1s ease'
-          }}
-        />
-      )}
-      
-      <div className="account-page">
-      {/* Profile Section */}
-      <section className="profile-section" id="profile">
-        <div className="section-header">
-          <h2 className="section-title">
-            <span className="title-icon">👤</span>
-            Driver Profile
-          </h2>
-        </div>
+      {/* SOS Flash Overlay */}
+      {showSOSFlash && <div className="acct-sos-flash" />}
 
-        <div className="profile-card">
-          <div className="profile-banner">
-            <div className="banner-gradient"></div>
-            <button className="edit-profile-btn">
-              <span>✏️</span>
-              <span>Edit Profile</span>
+      <div className="page-container acct-page">
+        {/* ── Profile Section ────────────────────────────── */}
+        <section id="profile">
+          <div className="page-header">
+            <h2 className="page-title">Driver Profile</h2>
+          </div>
+
+          <div className="card acct-profile-card">
+            <div className="acct-profile-top">
+              <div className="avatar-circle acct-profile-avatar">
+                {(loggedInDriver.name || 'D').charAt(0).toUpperCase()}
+              </div>
+              <div>
+                <h3 className="acct-driver-name">{loggedInDriver.name || 'Driver Name'}</h3>
+                <p className="acct-vehicle-number">{loggedInDriver.vehicleNumber || 'PB11-XX-XXXX'}</p>
+              </div>
+            </div>
+
+            <div className="acct-stats-grid">
+              <div className="acct-stat-box">
+                <span className="acct-stat-value">4.8</span>
+                <span className="acct-stat-label">Rating</span>
+              </div>
+              <div className="acct-stat-box">
+                <span className="acct-stat-value">{userStats.trustScore?.toFixed(1) || '95.0'}%</span>
+                <span className="acct-stat-label">Trust Score</span>
+              </div>
+              <div className="acct-stat-box">
+                <span className="acct-stat-value">{userStats.ridesShared || 127}</span>
+                <span className="acct-stat-label">Rides Shared</span>
+              </div>
+              <div className="acct-stat-box">
+                <span className="acct-stat-value">43</span>
+                <span className="acct-stat-label">Alerts Posted</span>
+              </div>
+            </div>
+
+            <div className="acct-vehicle-info">
+              <h4 className="acct-section-label">Vehicle Information</h4>
+              <div className="acct-info-grid">
+                <div className="acct-info-item">
+                  <span className="acct-info-label">Car Model</span>
+                  <span className="acct-info-value">{loggedInDriver.carModel || 'Maruti Swift'}</span>
+                </div>
+                <div className="acct-info-item">
+                  <span className="acct-info-label">License Number</span>
+                  <span className="acct-info-value">{loggedInDriver.licenseNumber || 'DL-XXXXXXXXXX'}</span>
+                </div>
+                <div className="acct-info-item">
+                  <span className="acct-info-label">Phone Number</span>
+                  <span className="acct-info-value">{loggedInDriver.phone || '+91 XXXXX XXXXX'}</span>
+                </div>
+                <div className="acct-info-item">
+                  <span className="acct-info-label">License Status</span>
+                  <span className="acct-info-value acct-verified">Verified</span>
+                </div>
+              </div>
+            </div>
+
+            <button className="btn-danger acct-logout-btn" onClick={onLogout}>
+              Logout
             </button>
           </div>
+        </section>
 
-          <div className="profile-content">
-            <div className="profile-avatar-section">
-              <div className="profile-avatar">
-                <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 200 200'%3E%3Ccircle cx='100' cy='100' r='100' fill='%233b82f6'/%3E%3Ctext x='100' y='130' font-size='80' fill='white' text-anchor='middle' font-family='Arial'%3E👤%3C/text%3E%3C/svg%3E" alt="Driver Avatar" />
-                <div className="verification-badge">✓</div>
+        {/* ── Wallet Section ─────────────────────────────── */}
+        <section id="wallet">
+          <div className="page-header">
+            <h2 className="page-title">Wallet</h2>
+          </div>
+
+          <div className="card acct-wallet-card">
+            <div className="acct-wallet-balance">
+              <div>
+                <span className="acct-balance-label">Total Balance</span>
+                <span className="acct-balance-amount">Rs.{walletBalance.toFixed(2)}</span>
               </div>
-              <div className="community-badge">
-                <span className="badge-icon">🏆</span>
-                <span>Patiala Community</span>
+              <div className="acct-balance-actions">
+                <button className="btn-primary" onClick={() => setShowAddMoney(true)}>Add Money</button>
+                <button className="btn-secondary" onClick={() => setShowWithdraw(true)}>Withdraw</button>
               </div>
             </div>
 
-            <div className="profile-details">
-              <h3 className="driver-name">{loggedInDriver.name || 'Driver Name'}</h3>
-              <p className="vehicle-number">🚗 {loggedInDriver.vehicleNumber || 'PB11-XX-XXXX'}</p>
-              
-              <div className="profile-stats">
-                <div className="stat-box">
-                  <div className="stat-icon">⭐</div>
-                  <div className="stat-info">
-                    <span className="stat-value">4.8</span>
-                    <span className="stat-label">Rating</span>
-                  </div>
-                </div>
-                <div className="stat-box">
-                  <div className="stat-icon">🛡️</div>
-                  <div className="stat-info">
-                    <span className="stat-value">{userStats.trustScore?.toFixed(1) || '95.0'}%</span>
-                    <span className="stat-label">Trust Score</span>
-                  </div>
-                </div>
-                <div className="stat-box">
-                  <div className="stat-icon">🚙</div>
-                  <div className="stat-info">
-                    <span className="stat-value">{userStats.ridesShared || 127}</span>
-                    <span className="stat-label">Rides Shared</span>
-                  </div>
-                </div>
-                <div className="stat-box">
-                  <div className="stat-icon">⚠️</div>
-                  <div className="stat-info">
-                    <span className="stat-value">43</span>
-                    <span className="stat-label">Alerts Posted</span>
-                  </div>
-                </div>
+            <div className="acct-wallet-stats">
+              <div className="acct-wallet-stat">
+                <span className="acct-wstat-amount">Rs.3,240</span>
+                <span className="acct-wstat-label">Commission Earned</span>
               </div>
+              <div className="acct-wallet-stat">
+                <span className="acct-wstat-amount acct-wstat-deduction">Rs.790</span>
+                <span className="acct-wstat-label">Deductions</span>
+              </div>
+              <div className="acct-wallet-stat">
+                <span className="acct-wstat-amount acct-wstat-bonus">Rs.125</span>
+                <span className="acct-wstat-label">Cashback and Bonus</span>
+              </div>
+            </div>
 
-              <div className="vehicle-info">
-                <h4>Vehicle Information</h4>
-                <div className="info-grid">
-                  <div className="info-item">
-                    <span className="info-label">Car Model</span>
-                    <span className="info-value">{loggedInDriver.carModel || 'Maruti Swift'}</span>
+            <div className="acct-transactions">
+              <div className="acct-transactions-header">
+                <h4 className="acct-section-label">Transaction History</h4>
+                <button className="btn-secondary acct-view-all-btn">View All</button>
+              </div>
+              <div className="acct-transactions-list">
+                {transactions.slice(0, 5).map(transaction => (
+                  <div key={transaction.id} className="acct-txn-item">
+                    <div className={`acct-txn-indicator ${transaction.type}`} />
+                    <div className="acct-txn-info">
+                      <span className="acct-txn-title">{transaction.description}</span>
+                      <span className="acct-txn-date">{transaction.date} - {transaction.time}</span>
+                    </div>
+                    <span className={`acct-txn-amount ${transaction.type}`}>
+                      {transaction.type === 'credit' ? '+' : '-'}Rs.{transaction.amount}
+                    </span>
                   </div>
-                  <div className="info-item">
-                    <span className="info-label">License Number</span>
-                    <span className="info-value">{loggedInDriver.licenseNumber || 'DL-XXXXXXXXXX'}</span>
+                ))}
+              </div>
+            </div>
+          </div>
+        </section>
+
+        {/* ── Chat Section ───────────────────────────────── */}
+        <section id="chat">
+          <div className="page-header">
+            <h2 className="page-title">Ride Chat</h2>
+          </div>
+
+          <div className="card acct-chat-card">
+            <div className="acct-chat-banner">
+              <div>
+                <h4 className="acct-chat-banner-title">Automated Chat Opening</h4>
+                <p className="acct-chat-banner-text">Chat opens automatically when you accept a shared ride request</p>
+              </div>
+            </div>
+
+            {!showChat ? (
+              <div className="acct-chat-placeholder">
+                <p>Chat will open automatically when you accept a ride request or click Messages from chat list</p>
+              </div>
+            ) : (
+              <div className="acct-chat-interface">
+                <div className="acct-chat-header">
+                  <div className="acct-chat-user">
+                    <div className="avatar-circle">
+                      {driverName.charAt(0).toUpperCase()}
+                    </div>
+                    <div>
+                      <h4 className="acct-chat-username">{driverName}</h4>
+                      <span className="acct-chat-status">Online</span>
+                    </div>
                   </div>
-                  <div className="info-item">
-                    <span className="info-label">Phone Number</span>
-                    <span className="info-value">{loggedInDriver.phone || '+91 XXXXX XXXXX'}</span>
-                  </div>
-                  <div className="info-item">
-                    <span className="info-label">License Status</span>
-                    <span className="info-value verified">✓ Verified</span>
-                  </div>
+                  <button className="modal-close" onClick={() => setShowChat(false)}>x</button>
                 </div>
-                <div className="car-photo">
-                  <img src="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 400 250'%3E%3Crect width='400' height='250' fill='%231a1a2e'/%3E%3Ctext x='200' y='125' font-size='60' fill='%2394a3b8' text-anchor='middle' font-family='Arial'%3E🚗%3C/text%3E%3C/svg%3E" alt="Car" />
+
+                <div className="acct-chat-messages">
+                  {chatMessages.length === 0 ? (
+                    <div className="acct-chat-empty">
+                      <p>Start a conversation with {driverName}</p>
+                    </div>
+                  ) : (
+                    chatMessages.map((msg) => (
+                      <div key={msg.id} className={`acct-msg ${msg.type}`}>
+                        {msg.type === 'received' && (
+                          <div className="acct-msg-sender">
+                            <strong>{driverName}</strong>
+                          </div>
+                        )}
+                        <p className="acct-msg-content">{msg.content}</p>
+                        <span className="acct-msg-time">{msg.time}</span>
+                      </div>
+                    ))
+                  )}
+                </div>
+
+                <div className="acct-ride-confirm">
+                  <p className="acct-ride-confirm-text">Confirm to finalize the ride booking</p>
+                  <div className="acct-ride-confirm-actions">
+                    <button
+                      className={`btn-primary acct-confirm-btn ${confirmationStatus.driver ? 'confirmed' : ''}`}
+                      onClick={handleConfirmRide}
+                      disabled={confirmationStatus.driver}
+                    >
+                      {confirmationStatus.driver ? 'Ride Confirmed' : 'Confirm Ride'}
+                    </button>
+                  </div>
+                  {confirmationStatus.driver && (
+                    <div className="acct-confirm-success">
+                      <p>Ride confirmed successfully! Commission will be deducted from wallet.</p>
+                    </div>
+                  )}
+                </div>
+
+                <div className="acct-chat-input-area">
+                  <input
+                    type="text"
+                    placeholder="Type your message..."
+                    value={chatInput}
+                    onChange={(e) => setChatInput(e.target.value)}
+                    onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                    className="input-field"
+                  />
+                  <button className="btn-primary" onClick={handleSendMessage}>Send</button>
                 </div>
               </div>
-              
-              <button className="logout-btn" onClick={onLogout}>
-                <span>🚪</span>
-                <span>Logout</span>
+            )}
+          </div>
+        </section>
+
+        {/* ── Rating Modal ───────────────────────────────── */}
+        {showRating && (
+          <div className="modal-overlay" onClick={() => setShowRating(false)}>
+            <div className="modal-content acct-rating-modal" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setShowRating(false)}>x</button>
+              <h3 className="acct-rating-title">Rate Your Experience</h3>
+              <p className="acct-rating-subtitle">How was your ride with {driverName}?</p>
+
+              <div className="acct-stars">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <button
+                    key={star}
+                    className={`acct-star-btn ${(hoverRating || rating) >= star ? 'active' : ''}`}
+                    onClick={() => setRating(star)}
+                    onMouseEnter={() => setHoverRating(star)}
+                    onMouseLeave={() => setHoverRating(0)}
+                  >
+                    {star}
+                  </button>
+                ))}
+              </div>
+              <p className="acct-rating-text">
+                {rating === 0 ? 'Select a rating' : ratingLabels[rating]}
+              </p>
+
+              <button
+                className="btn-primary acct-submit-rating"
+                onClick={handleSubmitRating}
+                disabled={rating === 0}
+              >
+                Submit Rating
               </button>
             </div>
           </div>
-        </div>
-      </section>
+        )}
 
-      {/* Wallet Section */}
-      <section className="wallet-section" id="wallet">
-        <div className="section-header">
-          <h2 className="section-title">
-            <span className="title-icon">💰</span>
-            Wallet
-          </h2>
-        </div>
+        {/* ── SOS Section ────────────────────────────────── */}
+        <section id="sos">
+          <div className="page-header">
+            <h2 className="page-title">Emergency SOS</h2>
+          </div>
 
-        <div className="wallet-card">
-          <div className="wallet-balance">
-            <div className="balance-display">
-              <span className="balance-label">Total Balance</span>
-              <span className="balance-amount">₹{walletBalance.toFixed(2)}</span>
+          <div className="card acct-sos-card">
+            <div className="acct-sos-warning">
+              <h4>Emergency Features</h4>
+              <p>Use these features only in case of real emergency</p>
             </div>
-            <div className="balance-actions">
-              <button className="wallet-action-btn add" onClick={() => setShowAddMoney(true)}>
-                <span>➕</span>
-                <span>Add Money</span>
+
+            <div className="acct-sos-main">
+              <button className="acct-sos-trigger" onClick={handleSOS}>
+                <span className="acct-sos-label">SOS</span>
+                <span className="acct-sos-sublabel">PRESS FOR EMERGENCY</span>
               </button>
-              <button className="wallet-action-btn withdraw" onClick={() => setShowWithdraw(true)}>
-                <span>💸</span>
-                <span>Withdraw</span>
-              </button>
-            </div>
-          </div>
-
-          <div className="wallet-stats-grid">
-            <div className="wallet-stat">
-              <div className="stat-icon-box earnings">💵</div>
-              <div className="stat-content">
-                <span className="stat-amount">₹3,240</span>
-                <span className="stat-name">Commission Earned</span>
-              </div>
-            </div>
-            <div className="wallet-stat">
-              <div className="stat-icon-box deductions">📉</div>
-              <div className="stat-content">
-                <span className="stat-amount">₹790</span>
-                <span className="stat-name">Deductions</span>
-              </div>
-            </div>
-            <div className="wallet-stat">
-              <div className="stat-icon-box cashback">🎁</div>
-              <div className="stat-content">
-                <span className="stat-amount">₹125</span>
-                <span className="stat-name">Cashback & Bonus</span>
-              </div>
-            </div>
-          </div>
-
-          <div className="transaction-section">
-            <div className="transaction-header">
-              <h3>Transaction History</h3>
-              <button className="view-all-btn">View All →</button>
-            </div>
-            <div className="transactions-list">
-              {transactions.slice(0, 5).map(transaction => (
-                <div key={transaction.id} className="transaction-item">
-                  <div className={`transaction-icon ${transaction.type}`}>
-                    {transaction.type === 'credit' ? '💰' : '💸'}
-                  </div>
-                  <div className="transaction-info">
-                    <span className="transaction-title">{transaction.description}</span>
-                    <span className="transaction-date">{transaction.date} • {transaction.time}</span>
-                  </div>
-                  <span className={`transaction-amount ${transaction.type}`}>
-                    {transaction.type === 'credit' ? '+' : '–'}₹{transaction.amount}
-                  </span>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* Chat Section */}
-      <section className="chat-section" id="chat">
-        <div className="section-header">
-          <h2 className="section-title">
-            <span className="title-icon">💬</span>
-            Ride Chat
-          </h2>
-        </div>
-
-        <div className="chat-card">
-          <div className="chat-info-banner">
-            <div className="info-icon-large">ℹ️</div>
-            <div className="info-text">
-              <h4>Automated Chat Opening</h4>
-              <p>Chat opens automatically when you accept a shared ride request</p>
-            </div>
-          </div>
-
-          {!showChat ? (
-            <div className="chat-demo-section">
-              <p className="demo-hint" style={{ textAlign: 'center', padding: '20px', color: '#64748b' }}>
-                💬 Chat will open automatically when you accept a ride request or click Messages from chat list
+              <p className="acct-sos-desc">
+                Broadcasts SOS to nearby drivers, alerts nearest police station, and shares your live location
               </p>
             </div>
-          ) : (
-            <div className="chat-interface">
-              <div className="chat-header-bar">
-                <div className="chat-user-info">
-                  <div className="chat-avatar">👤</div>
-                  <div>
-                    <h4>{driverName}</h4>
-                    <span className="online-status">● Online</span>
-                  </div>
-                </div>
-                <button className="close-chat-btn" onClick={() => setShowChat(false)}>✕</button>
-              </div>
 
-              <div className="chat-messages">
-                {chatMessages.length === 0 ? (
-                  <div className="empty-chat">
-                    <span className="empty-icon">💬</span>
-                    <p>Start a conversation with {driverName}</p>
-                  </div>
-                ) : (
-                  chatMessages.map((msg) => (
-                    <div key={msg.id} className={`message ${msg.type}`}>
-                      {msg.type === 'received' && (
-                        <div className="message-header-inline">
-                          <strong>{driverName}</strong>
-                        </div>
-                      )}
-                      <div className="message-content" dangerouslySetInnerHTML={{ __html: msg.content }} />
-                      <span className="message-time">{msg.time}</span>
-                    </div>
-                  ))
-                )}
-              </div>
-
-              <div className="ride-confirmation-section">
-                <div className="confirmation-banner">
-                  <span className="confirm-icon">🤝</span>
-                  <p>Confirm to finalize the ride booking</p>
+            <div className="acct-sos-features">
+              <h4 className="acct-section-label">When you press SOS:</h4>
+              <div className="acct-features-grid">
+                <div className="acct-feature-card">
+                  <h5>Broadcast Alert</h5>
+                  <p>Notify all nearby drivers</p>
                 </div>
-                <div className="confirmation-buttons">
-                  <button 
-                    className={`confirm-btn ${confirmationStatus.driver ? 'confirmed' : ''}`}
-                    onClick={handleConfirmRide}
-                    disabled={confirmationStatus.driver}
-                  >
-                    {confirmationStatus.driver ? '✓ Ride Confirmed' : 'Confirm Ride'}
-                  </button>
+                <div className="acct-feature-card">
+                  <h5>Police Alert</h5>
+                  <p>Notify nearest police station</p>
                 </div>
-                {confirmationStatus.driver && (
-                  <div className="confirmation-success">
-                    <span className="success-icon">✓</span>
-                    <p>Ride confirmed successfully! Commission will be deducted from wallet.</p>
-                  </div>
-                )}
+                <div className="acct-feature-card">
+                  <h5>Live Location</h5>
+                  <p>Share real-time location</p>
+                </div>
+                <div className="acct-feature-card">
+                  <h5>Voice Note</h5>
+                  <p>Optional voice message</p>
+                </div>
               </div>
+            </div>
 
-              <div className="chat-input-area">
-                <input 
-                  type="text" 
-                  placeholder="Type your message..." 
-                  value={chatInput}
-                  onChange={(e) => setChatInput(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
-                />
-                <button className="send-btn" onClick={handleSendMessage}>
-                  <span>📤</span>
+            <div className="acct-quick-contacts">
+              <h4 className="acct-section-label">Quick Contact</h4>
+              <div className="acct-contacts-grid">
+                <button className="acct-contact-btn">
+                  <div className="acct-contact-info">
+                    <span className="acct-contact-label">Call Police</span>
+                    <span className="acct-contact-number">100</span>
+                  </div>
                 </button>
-                <button className="voice-btn" title="Voice Note">
-                  <span>🎤</span>
+                <button className="acct-contact-btn">
+                  <div className="acct-contact-info">
+                    <span className="acct-contact-label">Call Nearby Driver</span>
+                    <span className="acct-contact-number">Community</span>
+                  </div>
+                </button>
+                <button className="acct-contact-btn">
+                  <div className="acct-contact-info">
+                    <span className="acct-contact-label">Call Ambulance</span>
+                    <span className="acct-contact-number">102</span>
+                  </div>
                 </button>
               </div>
             </div>
-          )}
-        </div>
-      </section>
-
-      {/* Rating Modal */}
-      {showRating && (
-        <div className="modal-overlay" onClick={() => setShowRating(false)}>
-          <div className="modal-content rating-modal" onClick={(e) => e.stopPropagation()}>
-            <button className="modal-close" onClick={() => setShowRating(false)}>×</button>
-            <h3 className="modal-title">Rate Your Experience</h3>
-            <p className="rating-subtitle">How was your ride with {driverName}?</p>
-            
-            <div className="stars-container">
-              {[1, 2, 3, 4, 5].map((star) => (
-                <span
-                  key={star}
-                  className={`star ${(hoverRating || rating) >= star ? 'active' : ''}`}
-                  onClick={() => setRating(star)}
-                  onMouseEnter={() => setHoverRating(star)}
-                  onMouseLeave={() => setHoverRating(0)}
-                >
-                  ⭐
-                </span>
-              ))}
-            </div>
-            <p className="rating-text">
-              {rating === 0 ? 'Select a rating' : 
-               rating === 1 ? 'Poor' :
-               rating === 2 ? 'Fair' :
-               rating === 3 ? 'Good' :
-               rating === 4 ? 'Very Good' : 'Excellent!'}
-            </p>
-            
-            <button 
-              className="submit-rating-btn"
-              onClick={handleSubmitRating}
-              disabled={rating === 0}
-            >
-              Submit Rating
-            </button>
           </div>
-        </div>
-      )}
+        </section>
 
-      {/* SOS Section */}
-      <section className="sos-section" id="sos">
-        <div className="section-header">
-          <h2 className="section-title">
-            <span className="title-icon">🆘</span>
-            Emergency SOS
-          </h2>
-        </div>
-
-        <div className="sos-card">
-          <div className="sos-warning">
-            <div className="warning-icon">⚠️</div>
-            <h3>Emergency Features</h3>
-            <p>Use these features only in case of real emergency</p>
-          </div>
-
-          <div className="sos-main-button">
-            <button className="sos-trigger-btn" onClick={handleSOS}>
-              <span className="sos-icon">🆘</span>
-              <span className="sos-text">PRESS FOR EMERGENCY</span>
-            </button>
-            <p className="sos-description">
-              Broadcasts SOS to nearby drivers, alerts nearest police station, and shares your live location
-            </p>
-          </div>
-
-          <div className="sos-features">
-            <h4>When you press SOS:</h4>
-            <div className="features-grid">
-              <div className="feature-card">
-                <div className="feature-icon">📡</div>
-                <h5>Broadcast Alert</h5>
-                <p>Notify all nearby drivers</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">🚔</div>
-                <h5>Police Alert</h5>
-                <p>Notify nearest police station</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">📍</div>
-                <h5>Live Location</h5>
-                <p>Share real-time location</p>
-              </div>
-              <div className="feature-card">
-                <div className="feature-icon">🎤</div>
-                <h5>Voice Note</h5>
-                <p>Optional voice message</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="quick-contact-buttons">
-            <h4>Quick Contact</h4>
-            <div className="contact-buttons-grid">
-              <button className="emergency-contact-btn police">
-                <span className="contact-icon">🚔</span>
-                <div className="contact-info">
-                  <span className="contact-label">Call Police</span>
-                  <span className="contact-number">100</span>
+        {/* ── Add Money Modal ────────────────────────────── */}
+        {showAddMoney && (
+          <div className="modal-overlay" onClick={() => setShowAddMoney(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setShowAddMoney(false)}>x</button>
+              <h3 className="acct-modal-title">Add Money to Wallet</h3>
+              <form onSubmit={handleAddMoney}>
+                <div className="acct-form-group">
+                  <label className="form-label">Enter Amount</label>
+                  <input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min="1"
+                    required
+                    className="input-field"
+                  />
                 </div>
-              </button>
-              <button className="emergency-contact-btn driver">
-                <span className="contact-icon">🚗</span>
-                <div className="contact-info">
-                  <span className="contact-label">Call Nearby Driver</span>
-                  <span className="contact-number">Community</span>
+                <div className="acct-quick-amounts">
+                  <button type="button" onClick={() => setAmount('500')} className="btn-secondary">500</button>
+                  <button type="button" onClick={() => setAmount('1000')} className="btn-secondary">1000</button>
+                  <button type="button" onClick={() => setAmount('2000')} className="btn-secondary">2000</button>
+                  <button type="button" onClick={() => setAmount('5000')} className="btn-secondary">5000</button>
                 </div>
-              </button>
-              <button className="emergency-contact-btn ambulance">
-                <span className="contact-icon">🚑</span>
-                <div className="contact-info">
-                  <span className="contact-label">Call Ambulance</span>
-                  <span className="contact-number">102</span>
+                <div className="acct-form-group">
+                  <label className="form-label">Payment Method</label>
+                  <div className="acct-payment-options">
+                    <label className="acct-payment-option">
+                      <input type="radio" name="payment" defaultChecked />
+                      <span>UPI</span>
+                    </label>
+                    <label className="acct-payment-option">
+                      <input type="radio" name="payment" />
+                      <span>Net Banking</span>
+                    </label>
+                    <label className="acct-payment-option">
+                      <input type="radio" name="payment" />
+                      <span>Debit Card</span>
+                    </label>
+                  </div>
                 </div>
-              </button>
+                <button type="submit" className="btn-primary acct-modal-submit">Add Money</button>
+              </form>
             </div>
           </div>
-        </div>
-      </section>
+        )}
 
-      {/* Add Money Modal */}
-      {showAddMoney && (
-        <div className="modal-overlay" onClick={() => setShowAddMoney(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2> Add Money to Wallet</h2>
-              <button className="modal-close" onClick={() => setShowAddMoney(false)}>✕</button>
-            </div>
-            <form onSubmit={handleAddMoney}>
-              <div className="form-group" style="color :black;">
-                <label>Enter Amount</label>
-                <input
-                  type="number"
-                  placeholder="₹ Enter amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min="1"
-                  required
-                  className="money-input"
-                />
-              </div>
-              <div className="quick-amounts">
-                <button type="button" onClick={() => setAmount('500')} className="quick-amt-btn">₹500</button>
-                <button type="button" onClick={() => setAmount('1000')} className="quick-amt-btn">₹1000</button>
-                <button type="button" onClick={() => setAmount('2000')} className="quick-amt-btn">₹2000</button>
-                <button type="button" onClick={() => setAmount('5000')} className="quick-amt-btn">₹5000</button>
-              </div>
-              <div className="payment-methods">
-                <h4>Payment Method</h4>
-                <div className="payment-options">
-                  <label className="payment-option">
-                    <input type="radio" name="payment" defaultChecked />
-                    <span>💳 UPI</span>
-                  </label>
-                  <label className="payment-option">
-                    <input type="radio" name="payment" />
-                    <span>🏦 Net Banking</span>
-                  </label>
-                  <label className="payment-option">
-                    <input type="radio" name="payment" />
-                    <span>💳 Debit Card</span>
-                  </label>
+        {/* ── Withdraw Money Modal ───────────────────────── */}
+        {showWithdraw && (
+          <div className="modal-overlay" onClick={() => setShowWithdraw(false)}>
+            <div className="modal-content" onClick={(e) => e.stopPropagation()}>
+              <button className="modal-close" onClick={() => setShowWithdraw(false)}>x</button>
+              <h3 className="acct-modal-title">Withdraw Money</h3>
+              <form onSubmit={handleWithdraw}>
+                <div className="acct-form-group">
+                  <label className="form-label">Withdrawal Amount</label>
+                  <input
+                    type="number"
+                    placeholder="Enter amount"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    min="1"
+                    max={walletBalance}
+                    required
+                    className="input-field"
+                  />
+                  <span className="form-hint">Available Balance: Rs.{walletBalance.toFixed(2)}</span>
                 </div>
-              </div>
-              <button type="submit" className="submit-btn">Add Money</button>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* Withdraw Money Modal */}
-      {showWithdraw && (
-        <div className="modal-overlay" onClick={() => setShowWithdraw(false)}>
-          <div className="modal-content" onClick={(e) => e.stopPropagation()}>
-            <div className="modal-header">
-              <h2>💸 Withdraw Money</h2>
-              <button className="modal-close" onClick={() => setShowWithdraw(false)}>✕</button>
+                <div className="acct-form-group">
+                  <label className="form-label">Account Number</label>
+                  <input
+                    type="text"
+                    placeholder="Enter account number"
+                    value={bankDetails.accountNumber}
+                    onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})}
+                    required
+                    className="input-field"
+                  />
+                </div>
+                <div className="acct-form-group">
+                  <label className="form-label">IFSC Code</label>
+                  <input
+                    type="text"
+                    placeholder="Enter IFSC code"
+                    value={bankDetails.ifsc}
+                    onChange={(e) => setBankDetails({...bankDetails, ifsc: e.target.value})}
+                    required
+                    className="input-field"
+                  />
+                </div>
+                <div className="acct-form-group">
+                  <label className="form-label">Account Holder Name</label>
+                  <input
+                    type="text"
+                    placeholder="Enter account holder name"
+                    value={bankDetails.accountHolder}
+                    onChange={(e) => setBankDetails({...bankDetails, accountHolder: e.target.value})}
+                    required
+                    className="input-field"
+                  />
+                </div>
+                <button type="submit" className="btn-primary acct-modal-submit">Withdraw Money</button>
+                <p className="form-hint" style={{ textAlign: 'center', marginTop: '8px' }}>
+                  Money will be transferred within 2-3 business days
+                </p>
+              </form>
             </div>
-            <form onSubmit={handleWithdraw}>
-              <div className="form-group">
-                <label>Withdrawal Amount</label>
-                <input
-                  type="number"
-                  placeholder="₹ Enter amount"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  min="1"
-                  max={walletBalance}
-                  required
-                  className="money-input"
-                />
-                <small>Available Balance: ₹{walletBalance.toFixed(2)}</small>
-              </div>
-              <div className="form-group">
-                <label>Account Number</label>
-                <input
-                  type="text"
-                  placeholder="Enter account number"
-                  value={bankDetails.accountNumber}
-                  onChange={(e) => setBankDetails({...bankDetails, accountNumber: e.target.value})}
-                  required
-                  className="money-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>IFSC Code</label>
-                <input
-                  type="text"
-                  placeholder="Enter IFSC code"
-                  value={bankDetails.ifsc}
-                  onChange={(e) => setBankDetails({...bankDetails, ifsc: e.target.value})}
-                  required
-                  className="money-input"
-                />
-              </div>
-              <div className="form-group">
-                <label>Account Holder Name</label>
-                <input
-                  type="text"
-                  placeholder="Enter account holder name"
-                  value={bankDetails.accountHolder}
-                  onChange={(e) => setBankDetails({...bankDetails, accountHolder: e.target.value})}
-                  required
-                  className="money-input"
-                />
-              </div>
-              <button type="submit" className="submit-btn withdraw-btn">Withdraw Money</button>
-              <p className="withdrawal-note">💡 Money will be transferred within 2-3 business days</p>
-            </form>
           </div>
-        </div>
-      )}
+        )}
       </div>
     </>
   );
