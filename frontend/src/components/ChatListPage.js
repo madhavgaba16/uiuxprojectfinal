@@ -8,7 +8,7 @@ const ChatListPage = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const [allChats, setAllChats] = useState([]);
   const driverData = JSON.parse(localStorage.getItem('driverData') || '{}');
-  
+
   useEffect(() => {
     const loadChats = async () => {
       if (!driverData._id) return;
@@ -24,7 +24,7 @@ const ChatListPage = () => {
   }, [driverData._id]);
 
   // Filter chats based on search query
-  const filteredChats = allChats.filter(chat => 
+  const filteredChats = allChats.filter(chat =>
     chat.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
     chat.vehicleNumber.toLowerCase().includes(searchQuery.toLowerCase())
   ).sort((a, b) => {
@@ -46,76 +46,71 @@ const ChatListPage = () => {
   const totalUnread = 0;
 
   return (
-    <div className="chat-list-page">
-      <div className="chat-list-container">
-        {/* Header */}
-        <div className="chat-list-header">
-          <h2 className="chat-list-title">
-            <span className="title-icon">💬</span>
-            Messages
-          </h2>
-          {totalUnread > 0 && (
-            <span className="total-unread-badge">{totalUnread}</span>
-          )}
-        </div>
+    <div className="page-container chatlist-page">
+      {/* Header */}
+      <div className="page-header chatlist-header">
+        <h2 className="page-title">Messages</h2>
+        {totalUnread > 0 && (
+          <span className="badge badge-danger">{totalUnread}</span>
+        )}
+      </div>
 
-        {/* Search Bar */}
-        <div className="chat-search-container">
-          <div className="chat-search-box">
-            <span className="search-icon">🔍</span>
-            <input
-              type="text"
-              placeholder="Search drivers by name or vehicle number..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="chat-search-input"
-            />
-            {searchQuery && (
-              <button 
-                className="clear-search-btn"
-                onClick={() => setSearchQuery('')}
-              >
-                ✕
-              </button>
-            )}
-          </div>
+      {/* Search Bar */}
+      <div className="chatlist-search">
+        <div className="chatlist-search-box">
+          <input
+            type="text"
+            placeholder="Search by name or vehicle number..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="input-field"
+          />
           {searchQuery && (
-            <p className="search-results-text">
-              Found {filteredChats.length} result{filteredChats.length !== 1 ? 's' : ''}
-            </p>
+            <button
+              className="chatlist-clear-btn"
+              onClick={() => setSearchQuery('')}
+            >
+              x
+            </button>
           )}
         </div>
+        {searchQuery && (
+          <p className="chatlist-results-text">
+            Found {filteredChats.length} result{filteredChats.length !== 1 ? 's' : ''}
+          </p>
+        )}
+      </div>
 
-        {/* Chat List */}
-        <div className="chats-container">
-          {filteredChats.length === 0 ? (
-            <div className="no-chats">
-              <span className="no-chats-icon">😕</span>
-              <p>No chats found</p>
-              <p className="no-chats-subtitle">Try searching with a different name</p>
-            </div>
-          ) : (
-            filteredChats.map((chat) => (
-              <div
-                key={chat.id}
-                className="chat-item"
-                onClick={() => handleChatClick(chat)}
-              >
-                <div className="chat-avatar">👤</div>
-                <div className="chat-details">
-                  <div className="chat-top">
-                    <h3 className="chat-name">{chat.name}</h3>
-                    <span className="chat-time">{chat.time}</span>
-                  </div>
-                  <div className="chat-bottom">
-                    <p className="chat-vehicle"> {chat.vehicleNumber}</p>
-                    <p className="chat-last-message">{chat.lastMessage}</p>
-                  </div>
+      {/* Chat List */}
+      <div className="chatlist-items">
+        {filteredChats.length === 0 ? (
+          <div className="chatlist-empty">
+            <p className="chatlist-empty-title">No chats found</p>
+            <p className="chatlist-empty-subtitle">Try searching with a different name</p>
+          </div>
+        ) : (
+          filteredChats.map((chat) => (
+            <div
+              key={chat.id}
+              className="chatlist-item card"
+              onClick={() => handleChatClick(chat)}
+            >
+              <div className="avatar-circle">
+                {chat.name ? chat.name.charAt(0).toUpperCase() : '?'}
+              </div>
+              <div className="chatlist-item-body">
+                <div className="chatlist-item-top">
+                  <h3 className="chatlist-item-name">{chat.name}</h3>
+                  <span className="chatlist-item-time">{chat.time}</span>
+                </div>
+                <div className="chatlist-item-bottom">
+                  <p className="chatlist-item-vehicle">{chat.vehicleNumber}</p>
+                  <p className="chatlist-item-message">{chat.lastMessage}</p>
                 </div>
               </div>
-            ))
-          )}
-        </div>
+            </div>
+          ))
+        )}
       </div>
     </div>
   );
