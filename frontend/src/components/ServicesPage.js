@@ -6,14 +6,14 @@ const ServicesPage = () => {
   const [sortBy, setSortBy] = useState('nearest');
 
   const categories = [
-    { id: 'mechanic', name: 'Mechanics', icon: '🔧', color: '#3b82f6' },
-    { id: 'fuel', name: 'Fuel Stations', icon: '⛽', color: '#fbbf24' },
-    { id: 'puncture', name: 'Tyre Puncture', icon: '🛞', color: '#f87171' },
-    { id: 'carwash', name: 'Car Wash', icon: '🚿', color: '#60a5fa' },
-    { id: 'accessories', name: 'Car Accessories', icon: '🛒', color: '#8b5cf6' },
-    { id: 'hospital', name: 'Hospitals', icon: '🏥', color: '#10b981' },
-    { id: 'restaurant', name: 'Restaurants', icon: '🍽️', color: '#f59e0b' },
-    { id: 'battery', name: 'Battery Service', icon: '🔋', color: '#ec4899' }
+    { id: 'mechanic', name: 'Mechanics', color: '#3b82f6' },
+    { id: 'fuel', name: 'Fuel Stations', color: '#d97706' },
+    { id: 'puncture', name: 'Tyre Puncture', color: '#dc2626' },
+    { id: 'carwash', name: 'Car Wash', color: '#2563eb' },
+    { id: 'accessories', name: 'Car Accessories', color: '#7c3aed' },
+    { id: 'hospital', name: 'Hospitals', color: '#059669' },
+    { id: 'restaurant', name: 'Restaurants', color: '#d97706' },
+    { id: 'battery', name: 'Battery Service', color: '#db2777' },
   ];
 
   const servicesData = {
@@ -92,9 +92,9 @@ const ServicesPage = () => {
 
   const getSortedServices = () => {
     if (!selectedCategory) return [];
-    
+
     let services = [...servicesData[selectedCategory.id]];
-    
+
     if (sortBy === 'nearest') {
       services.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
     } else if (sortBy === 'rating') {
@@ -103,215 +103,125 @@ const ServicesPage = () => {
       services = services.filter(service => service.isOpen);
       services.sort((a, b) => parseFloat(a.distance) - parseFloat(b.distance));
     }
-    
+
     return services;
   };
 
+  const filterButtons = [
+    { key: 'nearest', label: 'Nearest' },
+    { key: 'rating', label: 'Top Rated' },
+    { key: 'open', label: 'Open Now' },
+  ];
+
   return (
     <div className="services-page">
-      <div className="services-header">
-        <div className="header-content">
+      <div className="page-container services-container-wide">
+        <div className="page-header">
           {selectedCategory ? (
-            <div className="header-with-back">
-              <button className="back-btn" onClick={handleBackToCategories}>
-                <span>←</span>
+            <div className="svc-header-row">
+              <button className="btn-secondary svc-back-btn" onClick={handleBackToCategories}>
+                Back
               </button>
-              <div className="header-title">
-                <h1>
-                  <span className="category-icon">{selectedCategory.icon}</span>
-                  {selectedCategory.name}
-                </h1>
-                <p className="subtitle">Nearby services in Patiala</p>
+              <div>
+                <h1 className="page-title">{selectedCategory.name}</h1>
+                <p className="page-subtitle">Nearby services in Patiala</p>
               </div>
             </div>
           ) : (
-            <div className="header-title">
-              <h1>🛠️ Essential Services</h1>
-              <p className="subtitle">Find nearby services for drivers</p>
-            </div>
+            <>
+              <h1 className="page-title">Essential Services</h1>
+              <p className="page-subtitle">Find nearby services for drivers</p>
+            </>
           )}
         </div>
-      </div>
 
-      <div className="services-container">
         {!selectedCategory ? (
           /* Categories Grid View */
-          <div className="categories-view">
-            <div className="view-info">
-              <div className="info-icon">📍</div>
-              <h2>What service do you need?</h2>
-              <p>Select a category to find nearby services</p>
-            </div>
+          <div className="svc-categories-view">
+            <p className="svc-prompt">Select a category to find nearby services</p>
 
-            <div className="categories-grid">
+            <div className="svc-categories-grid">
               {categories.map((category) => (
                 <div
                   key={category.id}
-                  className="category-card"
+                  className="card svc-category-card"
                   onClick={() => handleCategoryClick(category)}
-                  style={{ '--category-color': category.color }}
                 >
-                  <div className="category-icon-large">{category.icon}</div>
-                  <h3>{category.name}</h3>
-                  <div className="category-arrow">→</div>
+                  <span className="svc-category-card__name">{category.name}</span>
+                  <span className="svc-category-card__arrow">&rarr;</span>
                 </div>
               ))}
-            </div>
-
-            <div className="features-info">
-              <h3>🗺️ Powered By</h3>
-              <div className="features-list">
-                <div className="feature-item">
-                  <span className="feature-icon">📍</span>
-                  <div className="feature-text">
-                    <strong>Driver GPS</strong>
-                    <small>Real-time location tracking</small>
-                  </div>
-                </div>
-                <div className="feature-item">
-                  <span className="feature-icon">🗺️</span>
-                  <div className="feature-text">
-                    <strong>Google Maps API</strong>
-                    <small>Accurate nearby search</small>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         ) : (
           /* Services List View */
-          <div className="services-list-view">
-            <div className="services-controls">
-              
-              <div className="filter-buttons">
-                <button 
-                  className={`filter-btn ${sortBy === 'nearest' ? 'active' : ''}`}
-                  onClick={() => setSortBy('nearest')}
+          <div className="svc-list-view">
+            {/* Filter buttons */}
+            <div className="svc-filters">
+              {filterButtons.map((fb) => (
+                <button
+                  key={fb.key}
+                  className={`svc-filter-btn ${sortBy === fb.key ? 'svc-filter-btn--active' : ''}`}
+                  onClick={() => setSortBy(fb.key)}
                 >
-                  <span>📍</span>
-                  <span>Nearest</span>
+                  {fb.label}
                 </button>
-                <button 
-                  className={`filter-btn ${sortBy === 'rating' ? 'active' : ''}`}
-                  onClick={() => setSortBy('rating')}
-                >
-                  <span>⭐</span>
-                  <span>Top Rated</span>
-                </button>
-                <button 
-                  className={`filter-btn ${sortBy === 'open' ? 'active' : ''}`}
-                  onClick={() => setSortBy('open')}
-                >
-                  <span>🕐</span>
-                  <span>Open Now</span>
-                </button>
-              </div>
+              ))}
             </div>
 
-            <div className="services-list">
+            {/* Service cards */}
+            <div className="svc-list">
               {getSortedServices().length > 0 ? (
                 getSortedServices().map((service) => (
-                  <div key={service.id} className="service-card">
-                  <div className="service-card-content">
-                    <div className="service-image">
-                      <div className="image-placeholder">
-                        <span className="placeholder-icon">{selectedCategory.icon}</span>
+                  <div key={service.id} className="card svc-card">
+                    <div className="svc-card__top">
+                      <div className="svc-card__info">
+                        <h3 className="svc-card__name">{service.name}</h3>
+                        <span className="svc-card__rating">{service.rating}/5</span>
+                      </div>
+                      <span className={`svc-status ${service.isOpen ? 'svc-status--open' : 'svc-status--closed'}`}>
+                        {service.isOpen ? 'Open' : 'Closed'}
+                      </span>
+                    </div>
+
+                    <div className="svc-card__details">
+                      <div className="svc-card__detail">
+                        <span className="svc-card__detail-label">Address</span>
+                        <span className="svc-card__detail-value">{service.address}</span>
+                      </div>
+                      <div className="svc-card__detail">
+                        <span className="svc-card__detail-label">Distance</span>
+                        <span className="svc-card__detail-value">{service.distance}</span>
+                      </div>
+                      <div className="svc-card__detail">
+                        <span className="svc-card__detail-label">Phone</span>
+                        <span className="svc-card__detail-value">{service.phone}</span>
+                      </div>
+                      <div className="svc-card__detail">
+                        <span className="svc-card__detail-label">Hours</span>
+                        <span className="svc-card__detail-value">Closes at {service.closes}</span>
                       </div>
                     </div>
-                    
-                    <div className="service-info">
-                      <div className="service-header">
-                        <div className="service-main-info">
-                          <h3 className="service-name">{service.name}</h3>
-                          <div className="service-rating">
-                            <span className="star">⭐</span>
-                            <span className="rating-value">{service.rating}</span>
-                          </div>
-                        </div>
-                        <div className={`status-badge ${service.isOpen ? 'open' : 'closed'}`}>
-                          {service.isOpen ? '🟢 Open' : '🔴 Closed'}
-                        </div>
-                      </div>
 
-                      <div className="service-details">
-                        <div className="detail-row">
-                          <span className="detail-icon">📍</span>
-                          <span className="detail-text">{service.address}</span>
-                        </div>
-                        <div className="detail-row">
-                          <span className="detail-icon">📏</span>
-                          <span className="detail-text">{service.distance} away</span>
-                        </div>
-                        <div className="detail-row">
-                          <span className="detail-icon">📞</span>
-                          <span className="detail-text">{service.phone}</span>
-                        </div>
-                        <div className="detail-row">
-                          <span className="detail-icon">🕐</span>
-                          <span className="detail-text">Closes at {service.closes}</span>
-                        </div>
-                      </div>
-
-                      <div className="service-actions">
-                        <button className="action-btn call-btn" onClick={() => window.location.href = `tel:${service.phone}`}>
-                          <span>📞</span>
-                          <span>Call Now</span>
-                        </button>
-                        <button className="action-btn directions-btn">
-                          <span>🗺️</span>
-                          <span>Directions</span>
-                        </button>
-                      </div>
+                    <div className="svc-card__actions">
+                      <button
+                        className="btn-primary svc-action-btn"
+                        onClick={() => window.location.href = `tel:${service.phone}`}
+                      >
+                        Call
+                      </button>
+                      <button className="btn-secondary svc-action-btn">
+                        Directions
+                      </button>
                     </div>
                   </div>
-                </div>
-              ))
+                ))
               ) : (
-                <div className="no-services-found">
-                  <div className="no-services-icon">🔍</div>
-                  <h3>No Services Found</h3>
-                  <p>All shops are currently closed. Try selecting "Nearest" or "Top Rated" filter.</p>
+                <div className="svc-empty">
+                  <h3 className="svc-empty__title">No Services Found</h3>
+                  <p className="svc-empty__text">All shops are currently closed. Try selecting "Nearest" or "Top Rated" filter.</p>
                 </div>
               )}
-            </div>
-
-            {/* Hidden example structure */}
-            <div className="example-structure" style={{ display: 'none' }}>
-              <div className="service-card">
-                <div className="service-image">
-                  <img src="" alt="Service" />
-                </div>
-                <div className="service-info">
-                  <div className="service-header">
-                    <h3 className="service-name">Service Name</h3>
-                    <span className="service-status open">● Open</span>
-                  </div>
-                  <div className="service-rating">
-                    <span className="stars">⭐⭐⭐⭐⭐</span>
-                    <span className="rating-text">4.5 (120 reviews)</span>
-                  </div>
-                  <p className="service-address">📍 Address goes here</p>
-                  <div className="service-details">
-                    <span className="detail-item">📞 Phone</span>
-                    <span className="detail-item">🕐 Open 24/7</span>
-                    <span className="detail-item">📏 2.5 km away</span>
-                  </div>
-                  <div className="service-actions">
-                    <button className="action-btn primary">
-                      <span>🗺️</span>
-                      <span>Directions</span>
-                    </button>
-                    <button className="action-btn secondary">
-                      <span>📞</span>
-                      <span>Call</span>
-                    </button>
-                    <button className="action-btn secondary">
-                      <span>ℹ️</span>
-                      <span>Info</span>
-                    </button>
-                  </div>
-                </div>
-              </div>
             </div>
           </div>
         )}
