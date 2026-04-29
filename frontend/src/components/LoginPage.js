@@ -18,9 +18,9 @@ const LoginPage = ({ onLogin }) => {
 
   const handleChange = (e) => {
     const { name, value } = e.target;
-    setFormData(prev => ({
+    setFormData((prev) => ({
       ...prev,
-      [name]: value
+      [name]: value,
     }));
   };
 
@@ -31,10 +31,10 @@ const LoginPage = ({ onLogin }) => {
       reader.onloadend = () => {
         if (type === 'license') {
           setPreviewLicense(reader.result);
-          setFormData(prev => ({ ...prev, licensePhoto: file.name }));
+          setFormData((prev) => ({ ...prev, licensePhoto: file.name }));
         } else {
           setPreviewCar(reader.result);
-          setFormData(prev => ({ ...prev, carPhoto: file.name }));
+          setFormData((prev) => ({ ...prev, carPhoto: file.name }));
         }
       };
       reader.readAsDataURL(file);
@@ -43,12 +43,11 @@ const LoginPage = ({ onLogin }) => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    // Validate PB11 in vehicle number
     if (!formData.vehicleNumber.toUpperCase().includes('PB11')) {
       alert('Vehicle number must include PB11 tag for Patiala registration');
       return;
     }
-    
+
     const driverProfile = {
       name: formData.name,
       phone: formData.phone,
@@ -56,7 +55,7 @@ const LoginPage = ({ onLogin }) => {
       vehicleNumber: formData.vehicleNumber,
       carModel: formData.carModel,
       licensePhoto: formData.licensePhoto,
-      carPhoto: formData.carPhoto
+      carPhoto: formData.carPhoto,
     };
 
     try {
@@ -70,26 +69,23 @@ const LoginPage = ({ onLogin }) => {
 
   return (
     <div className="login-page">
-      <div className="login-container">
-    {/* //     <div className="login-header">
-    //       <div className="logo-section">
-    //         <div className="logo-icon">🚕</div>
-    //         <h1>Driver Community</h1>
-    //         <p className="location-badge">📍 Patiala PB11</p>
-    //       </div>
-    //       <h2>Join drivers, share rides, stay updated</h2>
-    //       <p className="subtitle">Your all-in-one platform for Indian drivers</p>
-    //       <p className="privacy-note">🔒 Your details are safe & encrypted</p>
-    //     </div> */}
+      <div className="login-container card">
+        <div className="login-header">
+          <h1 className="login-title">WheelWise</h1>
+          <p className="login-subtitle">Join the driver community</p>
+        </div>
 
         <form className="login-form" onSubmit={handleSubmit}>
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="name">Full Name</label>
+          <div className="login-form-row">
+            <div className="login-form-group">
+              <label htmlFor="name" className="form-label">
+                Full Name
+              </label>
               <input
                 type="text"
                 id="name"
                 name="name"
+                className="input-field"
                 value={formData.name}
                 onChange={handleChange}
                 placeholder="Enter your full name"
@@ -97,12 +93,15 @@ const LoginPage = ({ onLogin }) => {
               />
             </div>
 
-            <div className="form-group">
-              <label htmlFor="phone">Phone Number</label>
+            <div className="login-form-group">
+              <label htmlFor="phone" className="form-label">
+                Phone Number
+              </label>
               <input
                 type="tel"
                 id="phone"
                 name="phone"
+                className="input-field"
                 value={formData.phone}
                 onChange={handleChange}
                 placeholder="+91 XXXXX XXXXX"
@@ -113,12 +112,15 @@ const LoginPage = ({ onLogin }) => {
             </div>
           </div>
 
-          <div className="form-group">
-            <label htmlFor="licenseNumber">Driving License Number</label>
+          <div className="login-form-group">
+            <label htmlFor="licenseNumber" className="form-label">
+              Driving License Number
+            </label>
             <input
               type="text"
               id="licenseNumber"
               name="licenseNumber"
+              className="input-field"
               value={formData.licenseNumber}
               onChange={handleChange}
               placeholder="DL-XXXXXXXXXX"
@@ -126,49 +128,63 @@ const LoginPage = ({ onLogin }) => {
             />
           </div>
 
-          <div className="form-group file-upload-group">
-            <label>Upload Driving License (Optional)</label>
-            <div className="file-upload-box">
+          <div className="login-form-group">
+            <label className="form-label">Upload Driving License (Optional)</label>
+            <div className="login-file-upload">
               <input
                 type="file"
                 id="licensePhoto"
                 accept="image/*"
                 onChange={(e) => handleFileChange(e, 'license')}
               />
-              <label htmlFor="licensePhoto" className="file-upload-label">
+              <label htmlFor="licensePhoto" className="login-file-upload-label">
                 {previewLicense ? (
-                  <img src={previewLicense} alt="License preview" className="preview-image" />
+                  <img
+                    src={previewLicense}
+                    alt="License preview"
+                    className="login-preview-image"
+                  />
                 ) : (
                   <>
-                    <span className="upload-icon">📄</span>
-                    <span>Click to upload license photo</span>
+                    <span className="login-upload-text">Click to upload</span>
+                    <span className="login-upload-hint">
+                      JPG, PNG up to 5 MB
+                    </span>
                   </>
                 )}
               </label>
             </div>
           </div>
 
-          <div className="form-row">
-            <div className="form-group">
-              <label htmlFor="vehicleNumber">Vehicle Number</label>
+          <div className="login-form-row">
+            <div className="login-form-group">
+              <label htmlFor="vehicleNumber" className="form-label">
+                Vehicle Number
+              </label>
               <input
                 type="text"
                 id="vehicleNumber"
                 name="vehicleNumber"
+                className="input-field"
                 value={formData.vehicleNumber}
                 onChange={handleChange}
-                placeholder="PB11-XX-XXXX (Must include PB11)"
+                placeholder="PB11-XX-XXXX"
                 required
               />
-              <small className="form-hint">⚠️ Must include PB11 for Patiala registration</small>
+              <span className="form-hint">
+                Must include PB11 for Patiala registration
+              </span>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="carModel">Car Model</label>
+            <div className="login-form-group">
+              <label htmlFor="carModel" className="form-label">
+                Car Model
+              </label>
               <input
                 type="text"
                 id="carModel"
                 name="carModel"
+                className="input-field"
                 value={formData.carModel}
                 onChange={handleChange}
                 placeholder="e.g., Maruti Swift, Hyundai i20"
@@ -177,31 +193,36 @@ const LoginPage = ({ onLogin }) => {
             </div>
           </div>
 
-          <div className="form-group file-upload-group">
-            <label>Upload Car Photo (Optional)</label>
-            <div className="file-upload-box">
+          <div className="login-form-group">
+            <label className="form-label">Upload Car Photo (Optional)</label>
+            <div className="login-file-upload">
               <input
                 type="file"
                 id="carPhoto"
                 accept="image/*"
                 onChange={(e) => handleFileChange(e, 'car')}
               />
-              <label htmlFor="carPhoto" className="file-upload-label">
+              <label htmlFor="carPhoto" className="login-file-upload-label">
                 {previewCar ? (
-                  <img src={previewCar} alt="Car preview" className="preview-image" />
+                  <img
+                    src={previewCar}
+                    alt="Car preview"
+                    className="login-preview-image"
+                  />
                 ) : (
                   <>
-                    <span className="upload-icon">🚙</span>
-                    <span>Click to upload car photo</span>
+                    <span className="login-upload-text">Click to upload</span>
+                    <span className="login-upload-hint">
+                      JPG, PNG up to 5 MB
+                    </span>
                   </>
                 )}
               </label>
             </div>
           </div>
 
-          <button type="submit" className="submit-btn">
-            <span>Join Community</span>
-            <span className="btn-arrow">→</span>
+          <button type="submit" className="btn-primary login-submit">
+            Join Community
           </button>
         </form>
       </div>
