@@ -5,7 +5,7 @@ import { postsApi } from '../api';
 
 const PostPage = () => {
   const navigate = useNavigate();
-  const [postType, setPostType] = useState('ride'); // 'ride' or 'alert'
+  const [postType, setPostType] = useState('ride');
   const [formData, setFormData] = useState({
     title: '',
     description: '',
@@ -14,7 +14,6 @@ const PostPage = () => {
     customerDetails: ''
   });
 
-  // Get logged-in driver data
   const driverData = JSON.parse(localStorage.getItem('driverData') || '{}');
 
   const handleChange = (e) => {
@@ -45,7 +44,7 @@ const PostPage = () => {
         customerDetails: formData.customerDetails
       });
 
-      alert(`✅ Your ${postType === 'ride' ? 'ride share' : 'alert'} has been posted successfully!`);
+      alert(`Your ${postType === 'ride' ? 'ride share' : 'alert'} has been posted successfully.`);
       navigate('/feed');
     } catch (error) {
       alert(`Unable to publish post: ${error.message}`);
@@ -53,49 +52,38 @@ const PostPage = () => {
   };
 
   return (
-    <div className="post-page">
-      <div className="post-container">
-        <div className="post-header">
-          <button className="back-btn" onClick={() => navigate('/feed')}>
-            <span>←</span>
-          </button>
-          <h1>Create New Post</h1>
-          <div className="header-spacer"></div>
-        </div>
+    <div className="page-container">
+      <div className="page-header post-page-header">
+        <button className="btn-secondary post-back-btn" onClick={() => navigate('/feed')}>
+          &#8592; Back
+        </button>
+        <h1 className="page-title">Create New Post</h1>
+      </div>
 
-        <div className="post-type-selector">
-          <button
-            className={`type-btn ${postType === 'ride' ? 'active' : ''}`}
-            onClick={() => setPostType('ride')}
-          >
-            <span className="type-icon">🚗</span>
-            <div className="type-info">
-              <h3>Ride Share</h3>
-              <p>Share your ride with others</p>
-            </div>
-          </button>
-          <button
-            className={`type-btn ${postType === 'alert' ? 'active' : ''}`}
-            onClick={() => setPostType('alert')}
-          >
-            <span className="type-icon">⚠️</span>
-            <div className="type-info">
-              <h3>Alert</h3>
-              <p>Post traffic or weather alerts</p>
-            </div>
-          </button>
-        </div>
+      <div className="post-type-selector">
+        <button
+          className={`btn-secondary post-type-btn ${postType === 'ride' ? 'post-type-active' : ''}`}
+          onClick={() => setPostType('ride')}
+        >
+          Ride Share
+        </button>
+        <button
+          className={`btn-secondary post-type-btn ${postType === 'alert' ? 'post-type-active' : ''}`}
+          onClick={() => setPostType('alert')}
+        >
+          Alert
+        </button>
+      </div>
 
-        <form className="post-form" onSubmit={handleSubmit}>
-          <div className="form-section">
-            <label htmlFor="title">
-              <span className="label-icon">📝</span>
-              Post Title
-            </label>
+      <form className="post-form" onSubmit={handleSubmit}>
+        <div className="card post-form-card">
+          <div className="post-form-group">
+            <label className="form-label" htmlFor="title">Post Title</label>
             <input
               type="text"
               id="title"
               name="title"
+              className="input-field"
               value={formData.title}
               onChange={handleChange}
               placeholder={postType === 'ride' ? 'e.g., Going to Chandigarh - 3 seats available' : 'e.g., Heavy traffic near Railway Station'}
@@ -103,14 +91,12 @@ const PostPage = () => {
             />
           </div>
 
-          <div className="form-section">
-            <label htmlFor="description">
-              <span className="label-icon">💬</span>
-              Description
-            </label>
+          <div className="post-form-group">
+            <label className="form-label" htmlFor="description">Description</label>
             <textarea
               id="description"
               name="description"
+              className="input-field"
               value={formData.description}
               onChange={handleChange}
               placeholder={postType === 'ride' ? 'Provide details about your ride, timing, and any preferences' : 'Describe the situation, location, and any important details'}
@@ -119,16 +105,16 @@ const PostPage = () => {
             />
           </div>
 
-          <div className="form-row">
-            <div className="form-section">
-              <label htmlFor="pickupPoint">
-                <span className="label-icon">📍</span>
+          <div className="post-form-row">
+            <div className="post-form-group">
+              <label className="form-label" htmlFor="pickupPoint">
                 {postType === 'ride' ? 'Pickup Point' : 'Location / Starting Point'}
               </label>
               <input
                 type="text"
                 id="pickupPoint"
                 name="pickupPoint"
+                className="input-field"
                 value={formData.pickupPoint}
                 onChange={handleChange}
                 placeholder="Enter location"
@@ -136,15 +122,15 @@ const PostPage = () => {
               />
             </div>
 
-            <div className="form-section">
-              <label htmlFor="dropPoint">
-                <span className="label-icon">🎯</span>
+            <div className="post-form-group">
+              <label className="form-label" htmlFor="dropPoint">
                 {postType === 'ride' ? 'Drop Point' : 'Destination / End Point'}
               </label>
               <input
                 type="text"
                 id="dropPoint"
                 name="dropPoint"
+                className="input-field"
                 value={formData.dropPoint}
                 onChange={handleChange}
                 placeholder="Enter location"
@@ -154,62 +140,53 @@ const PostPage = () => {
           </div>
 
           {postType === 'ride' && (
-            <div className="form-section">
-              <label htmlFor="customerDetails">
-                <span className="label-icon">👥</span>
+            <div className="post-form-group">
+              <label className="form-label" htmlFor="customerDetails">
                 Customer Details (Optional)
               </label>
               <input
                 type="text"
                 id="customerDetails"
                 name="customerDetails"
+                className="input-field"
                 value={formData.customerDetails}
                 onChange={handleChange}
                 placeholder="Number of passengers, contact info, etc."
               />
             </div>
           )}
+        </div>
 
-          <div className="post-preview">
-            <h3>Preview</h3>
-            <div className="preview-card">
-              <div className="preview-header">
-                <span className={`preview-badge ${postType}`}>
-                  {postType === 'ride' ? '🚗 Ride Share' : '⚠️ Alert'}
-                </span>
+        <div className="card post-preview-card">
+          <h3 className="post-preview-heading">Preview</h3>
+          <div className="post-preview-content">
+            <span className={`badge ${postType === 'alert' ? 'badge-warning' : ''}`}>
+              {postType === 'ride' ? 'Ride Share' : 'Alert'}
+            </span>
+            <h4 className="post-preview-title">{formData.title || 'Your post title...'}</h4>
+            <p className="post-preview-desc">{formData.description || 'Your description...'}</p>
+            {(formData.pickupPoint || formData.dropPoint) && (
+              <div className="post-preview-locations">
+                {formData.pickupPoint && (
+                  <span className="post-preview-loc">From: {formData.pickupPoint}</span>
+                )}
+                {formData.dropPoint && (
+                  <span className="post-preview-loc">To: {formData.dropPoint}</span>
+                )}
               </div>
-              <h4>{formData.title || 'Your post title...'}</h4>
-              <p>{formData.description || 'Your description...'}</p>
-              {(formData.pickupPoint || formData.dropPoint) && (
-                <div className="preview-locations">
-                  {formData.pickupPoint && (
-                    <div className="preview-location">
-                      <span>📍</span>
-                      <span>{formData.pickupPoint}</span>
-                    </div>
-                  )}
-                  {formData.dropPoint && (
-                    <div className="preview-location">
-                      <span></span>
-                      <span>{formData.dropPoint}</span>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
+            )}
           </div>
+        </div>
 
-          <div className="form-actions">
-            <button type="button" className="cancel-btn" onClick={() => navigate('/feed')}>
-              Cancel
-            </button>
-            <button type="submit" className="submit-btn">
-              <span>Publish Post</span>
-              <span className="btn-icon">✓</span>
-            </button>
-          </div>
-        </form>
-      </div>
+        <div className="post-form-actions">
+          <button type="button" className="btn-secondary" onClick={() => navigate('/feed')}>
+            Cancel
+          </button>
+          <button type="submit" className="btn-primary">
+            Publish Post
+          </button>
+        </div>
+      </form>
     </div>
   );
 };
