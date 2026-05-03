@@ -3,6 +3,7 @@ const Driver = require('../models/Driver');
 const Wallet = require('../models/Wallet');
 const Post = require('../models/Post');
 const Transaction = require('../models/Transaction');
+const { seedOldChatsForDriver } = require('../utils/seedChats');
 
 const router = express.Router();
 
@@ -52,8 +53,8 @@ router.post('/login-register', async (req, res) => {
         
         // EMBEDDED DOCUMENT 2: Current Location
         currentLocation: {
-          latitude: 0,
-          longitude: 0,
+          type: 'Point',
+          coordinates: [0, 0], // [lng, lat]
           address: '',
           city: ''
         },
@@ -77,6 +78,8 @@ router.post('/login-register', async (req, res) => {
       { $setOnInsert: { driverId: driver._id, balance: 2450 } },
       { upsert: true }
     );
+
+    await seedOldChatsForDriver(driver);
 
     // Seed dummy data for new drivers only
     const existingPosts = await Post.countDocuments({ authorId: driver._id });
@@ -147,43 +150,6 @@ router.post('/login-register', async (req, res) => {
         }
       ]);
 
-      await Transaction.insertMany([
-        {
-          driverId: driver._id,
-          type: 'credit',
-          amount: 500,
-          description: 'Welcome bonus',
-          details: { paymentMethod: 'wallet', referenceId: 'WELCOME-BONUS', status: 'success' }
-        },
-        {
-          driverId: driver._id,
-          type: 'credit',
-          amount: 1200,
-          description: 'Ride earnings - Patiala to Chandigarh',
-          details: { paymentMethod: 'wallet', referenceId: `RIDE-${Date.now()}-1`, status: 'success' }
-        },
-        {
-          driverId: driver._id,
-          type: 'debit',
-          amount: 30,
-          description: 'Commission - Ride with Harpreet Singh',
-          details: { paymentMethod: 'wallet', referenceId: `COM-${Date.now()}-1`, status: 'success' }
-        },
-        {
-          driverId: driver._id,
-          type: 'credit',
-          amount: 800,
-          description: 'Ride earnings - Patiala to Rajpura',
-          details: { paymentMethod: 'wallet', referenceId: `RIDE-${Date.now()}-2`, status: 'success' }
-        },
-        {
-          driverId: driver._id,
-          type: 'debit',
-          amount: 30,
-          description: 'Commission - Ride with Gurdeep Kaur',
-          details: { paymentMethod: 'wallet', referenceId: `COM-${Date.now()}-2`, status: 'success' }
-        }
-      ]);
     }
 
     res.json({ driver });
@@ -275,10 +241,10 @@ router.post('/:driverId/update-location', async (req, res) => {
       return res.status(404).json({ message: 'Driver not found' });
     }
 
-    // UPDATE OPERATION: Update embedded document (currentLocation)
+    // UPDATE OPERATION: Update embedded document (currentLocation) as GeoJSON Point
     driver.currentLocation = {
-      latitude: parseFloat(latitude) || 0,
-      longitude: parseFloat(longitude) || 0,
+      type: 'Point',
+      coordinates: [parseFloat(longitude) || 0, parseFloat(latitude) || 0], // [lng, lat]
       address: address || '',
       city: city || ''
     };

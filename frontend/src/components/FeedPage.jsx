@@ -61,8 +61,13 @@ const FeedPage = () => {
       const result = await postsApi.vote(postId, type);
       if (result.removed) {
         alert('Post removed due to high downvotes.');
+        await loadPosts();
+      } else if (result.post) {
+        // Update post in state with new vote counts
+        setPosts((prevPosts) =>
+          prevPosts.map((p) => (p.id === postId ? result.post : p))
+        );
       }
-      await loadPosts();
     } catch (error) {
       alert(`Unable to vote: ${error.message}`);
     }
@@ -93,6 +98,104 @@ const FeedPage = () => {
     (p) => p.authorId !== driverData._id && !acceptedRides.includes(p.id)
   );
 
+  const renderPostCard = (post, isOwnPost = false) => (
+    <div key={post.id} className="card post-card">
+      <div className="post-header">
+        <div className="post-author">
+          <div className="avatar-circle">
+            {(post.authorName || '?').charAt(0).toUpperCase()}
+          </div>
+          <div className="post-author-info">
+            <div className="post-author-name">
+              {post.authorName}
+              {isOwnPost && <span className="badge post-you-badge">You</span>}
+            </div>
+            <div className="post-meta-row">
+              {!isOwnPost && <span className="post-meta-tag">Patiala</span>}
+              <span className="post-meta-tag">{post.vehicleNumber}</span>
+              <span className="post-meta-tag">{post.trustScore}% Trust</span>
+            </div>
+            <span className="post-time">{post.timeAgo}</span>
+          </div>
+        </div>
+        <span className={`badge ${post.category === 'alert' ? 'badge-warning' : ''}`}>
+          {post.category === 'ride' ? 'Ride Share' : 'Alert'}
+        </span>
+      </div>
+
+      <div className="post-body">
+        <h3 className="post-title">{post.title}</h3>
+        <p className="post-description">{post.description}</p>
+        {post.pickup && (
+          <div className="post-locations">
+            <span className="post-location-item">From: {post.pickup}</span>
+            {post.drop && <span className="post-location-item">To: {post.drop}</span>}
+          </div>
+        )}
+      </div>
+
+      <div className="post-actions">
+        <div className="post-actions-left">
+          <button
+            className="btn-secondary post-like-btn"
+            onClick={() => handleVote(post.id, 'upvote')}
+          >
+            Like {post.upvotes}
+          </button>
+          <button
+            className="btn-secondary post-vote-btn"
+            onClick={() => handleVote(post.id, 'downvote')}
+          >
+            Dislike {post.downvotes}
+          </button>
+          <button
+            className="btn-secondary post-comment-btn"
+            onClick={() => toggleComments(post.id)}
+          >
+            Comment ({(post.comments || []).length})
+          </button>
+        </div>
+        {post.category === 'ride' && (
+          <button
+            className="btn-primary post-accept-btn"
+            onClick={() => handleAcceptRide(post)}
+          >
+            Accept Ride
+          </button>
+        )}
+      </div>
+
+      {showComments[post.id] && (
+        <div className="post-comments">
+          <div className="post-comments-list">
+            {(post.comments || []).map((comment) => (
+              <div key={comment.id} className="comment-item">
+                <div className="comment-header">
+                  <span className="comment-author">{comment.author}</span>
+                  <span className="comment-time">{comment.time}</span>
+                </div>
+                <p className="comment-text">{comment.text}</p>
+              </div>
+            ))}
+          </div>
+          <div className="comment-input-row">
+            <input
+              type="text"
+              className="input-field"
+              placeholder="Write a comment..."
+              value={commentText[post.id] || ''}
+              onChange={(e) => setCommentText((prev) => ({ ...prev, [post.id]: e.target.value }))}
+              onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
+            />
+            <button className="btn-primary" onClick={() => handleAddComment(post.id)}>
+              Send
+            </button>
+          </div>
+        </div>
+      )}
+    </div>
+  );
+
   if (loading) {
     return (
       <div className="page-container">
@@ -116,132 +219,9 @@ const FeedPage = () => {
           </div>
         )}
 
-        {userPosts.map((post) => (
-          <div key={post.id} className="card post-card">
-            <div className="post-header">
-              <div className="post-author">
-                <div className="avatar-circle">
-                  {(post.authorName || '?').charAt(0).toUpperCase()}
-                </div>
-                <div className="post-author-info">
-                  <div className="post-author-name">
-                    {post.authorName}
-                    <span className="badge post-you-badge">You</span>
-                  </div>
-                  <div className="post-meta-row">
-                    <span className="post-meta-tag">{post.vehicleNumber}</span>
-                    <span className="post-meta-tag">{post.trustScore}% Trust</span>
-                  </div>
-                  <span className="post-time">{post.timeAgo}</span>
-                </div>
-              </div>
-              <span className={`badge ${post.category === 'alert' ? 'badge-warning' : ''}`}>
-                {post.category === 'ride' ? 'Ride Share' : 'Alert'}
-              </span>
-            </div>
-            <div className="post-body">
-              <h3 className="post-title">{post.title}</h3>
-              <p className="post-description">{post.description}</p>
-            </div>
-          </div>
-        ))}
+        {userPosts.map((post) => renderPostCard(post, true))}
 
-        {communityPosts.map((post) => (
-          <div key={post.id} className="card post-card">
-            <div className="post-header">
-              <div className="post-author">
-                <div className="avatar-circle">
-                  {(post.authorName || '?').charAt(0).toUpperCase()}
-                </div>
-                <div className="post-author-info">
-                  <div className="post-author-name">{post.authorName}</div>
-                  <div className="post-meta-row">
-                    <span className="post-meta-tag">Patiala</span>
-                    <span className="post-meta-tag">{post.vehicleNumber}</span>
-                    <span className="post-meta-tag">{post.trustScore}% Trust</span>
-                  </div>
-                  <span className="post-time">{post.timeAgo}</span>
-                </div>
-              </div>
-              <span className={`badge ${post.category === 'alert' ? 'badge-warning' : ''}`}>
-                {post.category === 'ride' ? 'Ride Share' : 'Alert'}
-              </span>
-            </div>
-
-            <div className="post-body">
-              <h3 className="post-title">{post.title}</h3>
-              <p className="post-description">{post.description}</p>
-              {post.pickup && (
-                <div className="post-locations">
-                  <span className="post-location-item">From: {post.pickup}</span>
-                  {post.drop && (
-                    <span className="post-location-item">To: {post.drop}</span>
-                  )}
-                </div>
-              )}
-            </div>
-
-            <div className="post-actions">
-              <div className="post-actions-left">
-                <button
-                  className="btn-secondary post-vote-btn"
-                  onClick={() => handleVote(post.id, 'upvote')}
-                >
-                  + {post.upvotes}
-                </button>
-                <button
-                  className="btn-secondary post-vote-btn"
-                  onClick={() => handleVote(post.id, 'downvote')}
-                >
-                  - {post.downvotes}
-                </button>
-                <button
-                  className="btn-secondary post-comment-btn"
-                  onClick={() => toggleComments(post.id)}
-                >
-                  Comment ({(post.comments || []).length})
-                </button>
-              </div>
-              {post.category === 'ride' && (
-                <button
-                  className="btn-primary post-accept-btn"
-                  onClick={() => handleAcceptRide(post)}
-                >
-                  Accept Ride
-                </button>
-              )}
-            </div>
-
-            {showComments[post.id] && (
-              <div className="post-comments">
-                <div className="post-comments-list">
-                  {(post.comments || []).map((comment) => (
-                    <div key={comment.id} className="comment-item">
-                      <div className="comment-header">
-                        <span className="comment-author">{comment.author}</span>
-                        <span className="comment-time">{comment.time}</span>
-                      </div>
-                      <p className="comment-text">{comment.text}</p>
-                    </div>
-                  ))}
-                </div>
-                <div className="comment-input-row">
-                  <input
-                    type="text"
-                    className="input-field"
-                    placeholder="Write a comment..."
-                    value={commentText[post.id] || ''}
-                    onChange={(e) => setCommentText((prev) => ({ ...prev, [post.id]: e.target.value }))}
-                    onKeyDown={(e) => e.key === 'Enter' && handleAddComment(post.id)}
-                  />
-                  <button className="btn-primary" onClick={() => handleAddComment(post.id)}>
-                    Send
-                  </button>
-                </div>
-              </div>
-            )}
-          </div>
-        ))}
+        {communityPosts.map((post) => renderPostCard(post, false))}
       </div>
     </div>
   );

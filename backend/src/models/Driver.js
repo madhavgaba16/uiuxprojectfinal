@@ -15,12 +15,13 @@ const profileDetailsSchema = new mongoose.Schema(
 );
 
 // ============================================
-// EMBEDDED DOCUMENT 2: Location with Geospatial Data
+// EMBEDDED DOCUMENT 2: Location with GeoJSON (Point)
 // ============================================
 const locationSchema = new mongoose.Schema(
   {
-    latitude: { type: Number },
-    longitude: { type: Number },
+    type: { type: String, enum: ['Point'], default: 'Point' },
+    // GeoJSON coordinates: [ longitude, latitude ]
+    coordinates: { type: [Number], default: [0, 0] },
     address: { type: String, default: '' },
     city: { type: String, default: '' }
   },
@@ -70,8 +71,8 @@ driverSchema.index({ name: 'text', carModel: 'text' });
 // 3. COMPOUND INDEX - for multiple field queries (trustScore + isActive)
 driverSchema.index({ trustScore: -1, isActive: 1 });
 
-// 4. GEOSPATIAL INDEX - for location-based queries
-driverSchema.index({ 'currentLocation.latitude': 1, 'currentLocation.longitude': 1 });
+// 4. GEOSPATIAL INDEX - use a proper GeoJSON 2dsphere index on `currentLocation`
+driverSchema.index({ currentLocation: '2dsphere' });
 
 // 5. MULTIKEY INDEX - for array field (tags)
 driverSchema.index({ tags: 1 });

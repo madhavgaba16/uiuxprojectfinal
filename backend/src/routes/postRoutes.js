@@ -1,6 +1,8 @@
 const express = require('express');
 const Post = require('../models/Post');
 const Driver = require('../models/Driver');
+const Conversation = require('../models/Conversation');
+const Message = require('../models/Message');
 const { timeAgo } = require('../utils/timeAgo');
 
 const router = express.Router();
@@ -135,14 +137,15 @@ router.post('/:postId/vote', async (req, res) => {
     // DELETE OPERATION: when downvotes reach 10
     if (post.downvotes >= 10) {
       await Post.deleteOne({ _id: post._id });
-      return res.json({ removed: true });
+      return res.json({ removed: true, post: null });
     }
 
     // UPDATE OPERATION: Update analytics
     post.analytics.engagementScore = post.upvotes - (post.downvotes * 2);
     
     await post.save();
-    res.json({ removed: false });
+    const populated = await Post.findById(post._id).populate('authorId', 'name vehicleNumber trustScore');
+    res.json({ removed: false, post: toClientPost(populated) });
   } catch (error) {
     res.status(500).json({ message: 'Unable to vote post', error: error.message });
   }
@@ -434,3 +437,63 @@ router.get('/advanced/neutral-posts', async (req, res) => {
 });
 
 module.exports = router;
+
+// ============================================
+// ACCEPT RIDE: create conversation + message
+// ============================================
+router.post('/:postId/accept', async (req, res) => {
+  try {
+    const { postId } = req.params;
+    const { accepterId } = req.body;
+
+    if (!accepterId) return res.status(400).json({ message: 'accepterId is required' });
+
+    const post = await Post.findById(postId);
+    if (!post) return res.status(404).json({ message: 'Post not found' });
+
+    const authorId = post.authorId;
+    const [author, accepter] = await Promise.all([
+      Driver.findById(authorId),
+      Driver.findById(accepterId)
+    ]);
+
+    if (!author) return res.status(404).json({ message: 'Author not found' });
+    if (!accepter) return res.status(404).json({ message: 'Accepter not found' });
+
+    // find or create conversation between author and accepter
+    let conversation = await Conversation.findOne({
+      participants: { $all: [author._id, accepter._id] },
+      'participants.1': { $exists: true }
+    });
+
+    if (!conversation) {
+      conversation = await Conversation.create({
+        participants: [author._id, accepter._id],
+        settings: { isMuted: false, isBlocked: false, isArchived: false },
+        lastMessage: '',
+        messageCount: 0
+      });
+    }
+
+    const content = `${accepter.name} has accepted your ride: "${post.title}"`;
+
+    const message = await Message.create({
+      conversationId: conversation._id,
+      senderId: accepter._id,
+      content,
+      metadata: { isRead: false, readAt: null, isPinned: false, reactions: [] },
+      isDeleted: false,
+      editedAt: null
+    });
+
+    await Conversation.findByIdAndUpdate(conversation._id, {
+      lastMessage: content,
+      lastMessageAt: new Date(),
+      $inc: { messageCount: 1 }
+    });
+
+    res.json({ accepted: true, message: { id: message._id.toString(), content } });
+  } catch (error) {
+    res.status(500).json({ message: 'Unable to accept ride', error: error.message });
+  }
+});
